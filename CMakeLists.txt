@@ -1,0 +1,23 @@
+project(micro-spotify)
+
+cmake_minimum_required(VERSION 2.8.5)
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_BUILD")
+
+if (APPLE)
+    add_definitions("-std=c++11")
+elseif (${CMAKE_COMPILER_IS_GNUCXX})
+    add_definitions("-std=c++0x")
+endif (APPLE)
+add_definitions("-Wall")
+add_definitions("-pedantic")
+add_definitions("-Wextra")
+
+find_package(PkgConfig)
+
+set(TARGET_BASE "base")
+set(TARGET_CLIENT "client")
+
+add_subdirectory(base)
+#add_subdirectory(client)
+add_subdirectory(tests)
