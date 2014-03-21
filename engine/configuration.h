@@ -7,14 +7,14 @@
 #include <boost/filesystem/path.hpp>
 
 template<typename T>
-class configuration_item
+class configuration_element
 {
 public:
     typedef T value_type;
 
-    configuration_item() = default;
+    configuration_element() = default;
 
-    configuration_item(T value) : value(std::move(value)) { }
+    configuration_element(T value) : value(std::move(value)) { }
 
     T value() const { return value; }
 
@@ -33,7 +33,7 @@ public:
 
 private:
     T value;
-    std::vector<std::function<void(configuration_item)>> observers;
+    std::vector<std::function<void(configuration_element)>> observers;
 };
 
 struct configuration
