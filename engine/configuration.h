@@ -1,44 +1,17 @@
 #ifndef ENGINE_CONFIGURATION_H
 #define ENGINE_CONFIGURATION_H
 
-#include <vector>
-#include <functional>
-#include <utility>
 #include <boost/filesystem/path.hpp>
-#include <boost/signals2.hpp>
 
-template<typename T>
-FINAL class configuration_element
-{
-    typedef boost::signals2::signal<void(const T&)> signal_type;
+#include <base/compatibility.h>
 
-public:
-    typedef T value_type;
-    typedef signal_type::slot_type slot_type;
-
-    configuration_element() = default;
-
-    configuration_element(T value) : value_(std::move(value)) { }
-
-    T value() const { return value_; }
-    void set_value(T value)
-    {
-        value_ = std::move(value);
-        on_value_change_(value_);
-    }
-
-    boost::signals2::scoped_connection connect(const slot_type& slot)
-    {
-        return on_value_change_.connect(slot);
-    }
-
-private:
-    T value_;
-    signal_type on_value_change_;
-};
-
+// If it occurs that more configuration objects (with different properties) are needed
+// it would be worth to consider a different approach with a configuration manager
+// for loading and saving configuration; then a configuration should rather be a map or
+// should provide serializing/deserializing API
 FINAL struct configuration
 {
+    // TODO maybe it should load/save from/to a stream?
     static configuration load(const boost::filesystem::path& path);
     static void save(const boost::filesystem::path& path);
 
@@ -48,7 +21,5 @@ FINAL struct configuration
     // configuration_element<encrypted<string>> password;
     configuration_element<std::string> password;
 };
-
-class configurator
 
 #endif
