@@ -6,10 +6,6 @@
 #include <base/compatibility.h>
 
 namespace engine {
-// If it occurs that more configuration objects (with different properties) are needed
-// it would be worth to consider a different approach with a configuration manager
-// for loading and saving configuration; then a configuration should rather be a map or
-// should provide serializing/deserializing API
 FINAL struct configuration
 {
     // TODO maybe it should load/save from/to a stream?
