@@ -1,7 +1,7 @@
 #ifndef BASE_COMPABILITY_H
 #define BASE_COMPABILITY_H
 
-#include "inspect.h"
+#include <base/inspect.h>
 
 #if SUPPORTED(CPP11)
 #define FINAL final

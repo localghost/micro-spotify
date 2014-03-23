@@ -5,7 +5,7 @@
 #include <sstream>
 #include <exception>
 #include <boost/exception/all.hpp>
-#include "inspect.h"
+#include <base/inspect.h>
 
 namespace base {
 namespace error_info {
