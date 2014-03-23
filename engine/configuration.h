@@ -5,6 +5,7 @@
 
 #include <base/compatibility.h>
 
+namespace engine {
 // If it occurs that more configuration objects (with different properties) are needed
 // it would be worth to consider a different approach with a configuration manager
 // for loading and saving configuration; then a configuration should rather be a map or
@@ -15,11 +16,12 @@ FINAL struct configuration
     static configuration load(const boost::filesystem::path& path);
     static void save(const boost::filesystem::path& path);
 
-    configuration_element<boost::filesystem::path> cache;
-    configuration_element<std::string> username;
+    base::configuration_element<boost::filesystem::path> cache;
+    base::configuration_element<std::string> username;
     // FIXME use when encrypted<string> is implemented
     // configuration_element<encrypted<string>> password;
-    configuration_element<std::string> password;
+    base::configuration_element<std::string> password;
 };
+}
 
 #endif

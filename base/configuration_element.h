@@ -6,6 +6,7 @@
 
 #include <base/compatibility.h>
 
+namespace base {
 template<typename T>
 FINAL class configuration_element
 {
@@ -35,5 +36,6 @@ private:
     T value_;
     signal_type on_value_change_;
 };
+}
 
 #endif
