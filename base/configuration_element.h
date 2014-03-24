@@ -24,17 +24,17 @@ public:
     void set_value(T value)
     {
         value_ = value;
-        on_value_change_(std::move(value));
+        on_change_(std::move(value));
     }
 
     boost::signals2::scoped_connection connect(const slot_type& slot)
     {
-        return on_value_change_.connect(slot);
+        return on_change_.connect(slot);
     }
 
 private:
     T value_;
-    signal_type on_value_change_;
+    signal_type on_change_;
 };
 }
 
