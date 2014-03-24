@@ -10,7 +10,7 @@ namespace base {
 template<typename T>
 FINAL class configuration_element
 {
-    typedef boost::signals2::signal<void(const T&)> signal_type;
+    typedef boost::signals2::signal<void(T)> signal_type;
 
 public:
     typedef T value_type;
@@ -23,8 +23,8 @@ public:
     T value() const { return value_; }
     void set_value(T value)
     {
-        value_ = std::move(value);
-        on_value_change_(value_);
+        value_ = value;
+        on_value_change_(std::move(value));
     }
 
     boost::signals2::scoped_connection connect(const slot_type& slot)
