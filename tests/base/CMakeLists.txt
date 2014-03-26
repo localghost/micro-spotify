@@ -3,6 +3,7 @@ set(TARGET_NAME "tests-base")
 set(SRCS
     test_main.cc
     test_log.cc
+    test_configuration_element.cc
 #    test_exception.cc
 )
 
