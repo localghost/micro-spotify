@@ -7,7 +7,6 @@ find_package(Boost REQUIRED)
 
 include_directories(
     ${Boost_INCLUDE_DIRS}
-    ${PROJECT_SOURCE_DIR}
 )
 
 link_directories(${Boost_LIBRARY_DIRS})
