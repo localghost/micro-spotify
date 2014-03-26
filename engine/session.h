@@ -4,7 +4,7 @@
 #include <libspotify/api.h>
 
 namespace engine {
-FINAL class session
+class session FINAL
 {
     typedef boost::signals2::signal<void(sp_error)> logged_in_signal_type;
 
@@ -13,6 +13,8 @@ public:
 
     session();
     ~session();
+
+
 
     boost::signals2::scoped_connection connect_logged_in(const logged_in_slot_type& slot);
 
