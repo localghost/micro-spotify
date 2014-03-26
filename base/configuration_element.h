@@ -14,7 +14,7 @@ class configuration_element FINAL
 
 public:
     typedef T value_type;
-    typedef signal_type::slot_type slot_type;
+    typedef typename signal_type::slot_type slot_type;
 
     configuration_element() = default;
 
@@ -27,7 +27,7 @@ public:
         on_change_(std::move(value));
     }
 
-    boost::signals2::scoped_connection connect(const slot_type& slot)
+    boost::signals2::connection connect(const slot_type& slot)
     {
         return on_change_.connect(slot);
     }
