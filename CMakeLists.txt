@@ -19,6 +19,8 @@ set(TARGET_BASE "base")
 set(TARGET_ENGINE "engine")
 set(TARGET_CLIENT "client")
 
+include_directories(${PROJECT_SOURCE_DIR})
+
 add_subdirectory(base)
 add_subdirectory(engine)
 #add_subdirectory(client)
