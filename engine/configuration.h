@@ -6,7 +6,7 @@
 #include <base/compatibility.h>
 
 namespace engine {
-FINAL struct configuration
+struct configuration FINAL
 {
     // TODO maybe it should load/save from/to a stream?
     static configuration load(const boost::filesystem::path& path);

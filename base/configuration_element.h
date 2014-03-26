@@ -8,7 +8,7 @@
 
 namespace base {
 template<typename T>
-FINAL class configuration_element
+class configuration_element FINAL
 {
     typedef boost::signals2::signal<void(T)> signal_type;
 
