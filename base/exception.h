@@ -21,30 +21,32 @@ struct exception : virtual std::exception, virtual boost::exception {};
 void verbose_terminate_handler();
 }
 
-#define MAKE_EXCEPTION_TYPE(ClassName) \
+#define EXCEPTION_TYPE(ClassName) \
         struct ClassName : virtual ::base::exception { }
 
-#define MAKE_EXCEPTION(ClassName) \
+#define EXCEPTION(ClassName) \
         ::boost::enable_error_info(ClassName{}) \
             << ::boost::throw_file{__FILE__} \
             << ::boost::throw_line{int(__LINE__)} \
             << ::boost::throw_function{BOOST_CURRENT_FUNCTION}
 
-#define THROW(ClassName) ::boost::throw_exception(MAKE_EXCEPTION(ClassName))
+#define THROW(ExceptionObject) ::boost::throw_exception(ExceptionObject)
 
-// FIXME Add some prefix
-#define THROW_MESSAGE(ClassName, Message) \
-        do { \
-            ::std::ostringstream oss; \
-            oss << Message; \
-            ::boost::throw_exception( \
-                MAKE_EXCEPTION(ClassName) \
-                    << ::base::error_info::message{oss.str()}); \
-        } while (false)
+//#define THROW(ClassName) ::boost::throw_exception(EXCEPTION(ClassName))
+
+//// FIXME Add some prefix
+//#define THROW_MESSAGE(ClassName, Message) \
+//        do { \
+//            ::std::ostringstream oss; \
+//            oss << Message; \
+//            ::boost::throw_exception( \
+//                EXCEPTION(ClassName) \
+//                    << ::base::error_info::message{oss.str()}); \
+//        } while (false)
 
 namespace base {
 /// Exception resulted from an I/O operation
-MAKE_EXCEPTION_TYPE(io_error);
+EXCEPTION_TYPE(io_error);
 }
 
 #endif
