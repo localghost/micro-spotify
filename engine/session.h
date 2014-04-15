@@ -11,15 +11,17 @@ class session FINAL
 public:
     typedef logged_in_signal_type::slot_type logged_in_slot_type;
 
-    session();
+    explicit session(configuration& config);
     ~session();
-
-
 
     boost::signals2::scoped_connection connect_logged_in(const logged_in_slot_type& slot);
 
 private:
-    void setup_configuration();
+    static void logged_in(sp_session* session, sp_error error);
+    static int music_delivery(sp_session* session,
+                              const sp_audioformat* format,
+                              const void* frames,
+                              int num_frames);
 
     sp_session* session_;
 };
