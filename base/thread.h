@@ -1,6 +1,7 @@
 #ifndef BASE_THREAD_H
 #define BASE_THREAD_H
 
+#include <atomic>
 #include <thread>
 #include <base/task.h>
 #include <base/thread_safe_queue.h>
@@ -15,14 +16,15 @@ public:
     ~thread();
 
     void start(); // necessary except for completeness?
-    void quit();
+    void stop();
 
-    void post_task(task task_);
+    void queue_task(task task_);
 
 private:
     void exec();
 
     std::thread* thread_;
+    std::atomic<bool> active_;
     thread_safe_queue<task> queue_;
 };
 }
