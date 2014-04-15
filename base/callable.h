@@ -20,7 +20,7 @@ class callable FINAL
   {
   public:
     // CallableU is the same as CallableT
-    template<typename CallableU>//, typename std::enable_if<!std::is_same<callable_model, CallableU>::value>::type* = nullptr>
+    template<typename CallableU, typename std::enable_if<!std::is_same<callable_model, CallableU>::value>::type* = nullptr>
     callable_model(CallableU&& c) : callable_(c) { }
 
     void call() const { callable_(); }
@@ -32,7 +32,7 @@ class callable FINAL
 public:
   callable() = default;
 
-  template<typename CallableT>//, typename std::enable_if<!std::is_same<callable, CallableT>::value>::type* = nullptr>
+  template<typename CallableT, typename std::enable_if<!std::is_same<callable, CallableT>::value>::type* = nullptr>
   explicit callable(CallableT&& c)
   {
     callable_.reset(new callable_model<CallableT>(std::forward<CallableT>(c)));
