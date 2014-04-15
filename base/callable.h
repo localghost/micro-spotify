@@ -30,13 +30,19 @@ class callable FINAL
   };
 
 public:
+  callable() = default;
+
   template<typename CallableT>//, typename std::enable_if<!std::is_same<callable, CallableT>::value>::type* = nullptr>
   explicit callable(CallableT&& c)
   {
     callable_.reset(new callable_model<CallableT>(std::forward<CallableT>(c)));
   }
 
-  void operator()() { callable_->call(); }
+  void operator()()
+  {
+    if (callable_)
+      callable_->call();
+  }
 
 private:
   std::shared_ptr<const callable_model_base> callable_;

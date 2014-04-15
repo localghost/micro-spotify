@@ -2,22 +2,28 @@
 #define BASE_THREAD_H
 
 #include <thread>
-#include <base/callable.h>
+#include <base/task.h>
 #include <base/thread_safe_queue.h>
 
 namespace base {
 class thread FINAL
 {
 public:
+    static thread& current();
+
     thread();
     ~thread();
 
-    void join();
+    void start(); // necessary except for completeness?
+    void quit();
+
+    void post_task(task task_);
 
 private:
-    void run();
+    void exec();
 
-    thread_safe_queue<callable> queue_;
+    std::thread* thread_;
+    thread_safe_queue<task> queue_;
 };
 }
 
