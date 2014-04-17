@@ -48,6 +48,18 @@ public:
     result = std::move(queue_.front());
     queue_.pop();
   }
+  
+  bool try_pop(T& result)
+  {
+      std::lock_guard<std::mutex> guard{lock_};
+      
+      if (queue_.empty()) return false;
+
+      result = std::move(queue_.front());
+      queue_.pop();
+
+      return true;
+  }
 
 private:
   std::queue<T> queue_;
