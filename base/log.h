@@ -50,6 +50,7 @@ private:
 #ifdef DEBUG_BUILD
 #define LOG_DEBUG LOG_IF(true, ::base::log::severity::Debug)
 #else
+// FIXME prints warning in GCC 4.6
 #define LOG_DEBUG LOG_IF(false, ::base::log::severity::Debug)
 #endif
 

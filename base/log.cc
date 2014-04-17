@@ -14,6 +14,7 @@ const char* severity_to_string(severity severity_)
     case severity::Warning: return "WARNING";
     case severity::Error: return "ERROR";
     }
+    return ""; // to surpress warnings
 }
 }
 
