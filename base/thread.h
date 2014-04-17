@@ -24,8 +24,7 @@ private:
     void exec();
 
     std::thread* thread_;
-    std::atomic<bool> active_;
-    thread_safe_queue<task> queue_;
+    message_loop loop_;
 };
 }
 
