@@ -1,6 +1,8 @@
 #ifndef MESSAGE_LOOP_H
 #define MESSAGE_LOOP_H
 
+#include <base/thread_safe_queue.h>
+
 namespace base {
 class message_loop FINAL
 {
