@@ -3,6 +3,7 @@
 
 #include <mutex>
 #include <condition_variable>
+#include <queue>
 #include <base/task.h>
 
 namespace base {
@@ -45,7 +46,7 @@ public:
     //       using notify_all() might help with that but it is more
     //       expensive
     result = std::move(queue_.front());
-    queue.pop();
+    queue_.pop();
   }
 
 private:
