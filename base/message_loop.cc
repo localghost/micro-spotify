@@ -15,6 +15,8 @@ void message_loop::start()
 void message_loop::stop()
 {
   active_ = false;
+  // FIXME Push task to the queue so that waiting threads
+  //       is resumed
 }
 
 void message_loop::queue_task(task task_)
