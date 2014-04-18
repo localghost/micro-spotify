@@ -1,17 +1,18 @@
 #ifndef BASE_TASK_H
 #define BASE_TASK_H
 
+#include <utility>
 #include <base/callable.h>
 
 namespace base {
-class task
+class task FINAL
 {
 public:
-  task();
+  task() = default;
 
   explicit task(callable callable_) : callable_(std::move(callable_)) { }
 
-  void run()
+  void operator()()
   {
     callable_();
   }
