@@ -10,7 +10,7 @@ namespace base {
 class thread FINAL
 {
 public:
-    static thread& current();
+    static thread* current();
 
     thread();
     ~thread();
