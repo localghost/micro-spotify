@@ -7,14 +7,17 @@ namespace engine {
 class session FINAL
 {
     typedef boost::signals2::signal<void(sp_error)> logged_in_signal_type;
+    typedef boost::signals2::signal<void(sp_error)> frames_delivered_signal_type;
 
 public:
     typedef logged_in_signal_type::slot_type logged_in_slot_type;
+    typedef frames_delivered_signal_type::slot_type frames_delivered_slot_type;
 
     explicit session(configuration& config);
     ~session();
 
     boost::signals2::scoped_connection connect_logged_in(const logged_in_slot_type& slot);
+    boost::signals2::scoped_connection connect_frames_delivered(const frames_delivered_slot_type& slot);
 
 private:
     static void logged_in(sp_session* session, sp_error error);
