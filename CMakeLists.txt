@@ -4,11 +4,12 @@ cmake_minimum_required(VERSION 2.8.5)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_BUILD")
 
-if (APPLE)
-    add_definitions("-std=c++11")
-elseif (${CMAKE_COMPILER_IS_GNUCXX})
+if (${CMAKE_COMPILER_IS_GNUCXX})
     add_definitions("-std=c++0x")
-endif (APPLE)
+else (${CMAKE_COMPILER_IS_GNUCXX})
+    add_definitions("-std=c++11")
+endif (${CMAKE_COMPILER_IS_GNUCXX})
+
 add_definitions("-Wall")
 add_definitions("-pedantic")
 add_definitions("-Wextra")
