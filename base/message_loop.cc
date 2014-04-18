@@ -14,9 +14,11 @@ void message_loop::start()
 
 void message_loop::stop()
 {
-  active_ = false;
-  // FIXME Push task to the queue so that waiting threads
-  //       is resumed
+// FIXME https://github.com/localghost/micro-spotify/wiki/Architecture#message-loop
+//
+//  active_ = false;
+
+  queue_task(task{[this]() { active_ = false; }});
 }
 
 void message_loop::queue_task(task task_)

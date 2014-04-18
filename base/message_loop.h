@@ -4,6 +4,7 @@
 #include <base/thread_safe_queue.h>
 
 namespace base {
+// Tasks will be executed on the thread the start() method was invoked on.
 class message_loop FINAL
 {
 public:
