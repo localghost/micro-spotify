@@ -35,7 +35,7 @@ public:
   template<typename CallableT, typename std::enable_if<!std::is_same<callable, CallableT>::value>::type* = nullptr>
   explicit callable(CallableT&& c)
   {
-    callable_.reset(new callable_model<CallableT>(std::forward<CallableT>(c)));
+    callable_.reset(new callable_model<CallableT>{std::forward<CallableT>(c)});
   }
 
   void operator()()
