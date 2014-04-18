@@ -18,7 +18,8 @@ public:
 private:
   void exec();
 
-  std::atomic<bool> active_;
+//  std::atomic<bool> active_;
+  bool active_;
   thread_safe_queue<task> queue_;
 };
 }
