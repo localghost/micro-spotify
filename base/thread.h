@@ -1,8 +1,8 @@
 #ifndef BASE_THREAD_H
 #define BASE_THREAD_H
 
-#include <atomic>
 #include <thread>
+#include <memory>
 #include <base/task.h>
 #include <base/thread_safe_queue.h>
 
@@ -23,7 +23,7 @@ public:
 private:
     void exec();
 
-    std::thread* thread_;
+    std::unique_ptr<std::thread> thread_;
     message_loop loop_;
 };
 }
