@@ -2,6 +2,7 @@
 #define ENGINE_SESSION_H
 
 #include <libspotify/api.h>
+#include <base/thread.h>
 
 namespace engine {
 class session FINAL
@@ -27,6 +28,7 @@ private:
                               int num_frames);
 
     sp_session* session_;
+    base::thread thread_;
 };
 }
 
