@@ -3,6 +3,7 @@
 
 #include <boost/filesystem/path.hpp>
 
+#include <base/configuration_element.h>
 #include <base/compatibility.h>
 
 namespace engine {
