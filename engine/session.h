@@ -17,18 +17,23 @@ public:
     explicit session(configuration& config);
     ~session();
 
-    boost::signals2::scoped_connection connect_logged_in(const logged_in_slot_type& slot);
-    boost::signals2::scoped_connection connect_frames_delivered(const frames_delivered_slot_type& slot);
+    void log_in();
+
+    boost::signals2::connection connect_logged_in(const logged_in_slot_type& slot);
+    boost::signals2::connection connect_frames_delivered(const frames_delivered_slot_type& slot);
 
 private:
     static void logged_in(sp_session* session, sp_error error);
-    static int music_delivery(sp_session* session,
+    static int music_delivery(sp_session* session_,
                               const sp_audioformat* format,
                               const void* frames,
                               int num_frames);
 
     sp_session* session_;
     base::thread thread_;
+
+    logged_in_signal_type on_logged_in;
+    frames_delivered_signal_type on_frames_delivered;
 };
 }
 
