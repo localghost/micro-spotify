@@ -32,8 +32,11 @@ class callable FINAL
 public:
   callable() = default;
 
+  // FIXME the enable_f check is not sufficient probably! Though it prevents
+  //       from "too perfect forwarding" but it accepts arguments of e.g.
+  //       integral type
   template<typename CallableT, typename std::enable_if<!std::is_same<callable, CallableT>::value>::type* = nullptr>
-  explicit callable(CallableT&& c)
+  callable(CallableT&& c)
   {
     callable_.reset(new callable_model<CallableT>{std::forward<CallableT>(c)});
   }
