@@ -4,7 +4,7 @@
 #include <thread>
 #include <memory>
 #include <base/task.h>
-#include <base/thread_safe_queue.h>
+#include <base/message_loop.h>
 
 namespace base {
 class thread FINAL
