@@ -31,9 +31,6 @@ void thread::stop()
 {
   if (!thread_) return;
 
-  // This causes the loop to stop at next iteration
-  // if first draining the loop is preferred queue the task
-  // which will set active_ to false in the thread proc
   loop_.stop();
   thread_->join();
   thread_.reset();
@@ -42,7 +39,7 @@ void thread::stop()
 void thread::queue_task(task task_)
 {
   // FIXME Maybe return bool(false) when thread is not active
-  //       and do not add task to the queu
+  //       and do not add task to the queue
   assert(thread_);
   loop_.queue_task(std::move(task_));
 }
