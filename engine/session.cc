@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <base/task.h>
+
 namespace signals = boost::signals2;
 
 namespace engine {
@@ -39,19 +41,21 @@ session::session(configuration& config)
 //  std::string cache_location = config.cache.value();
 
   sp_session_config sp_config;
-  config.api_version = SPOTIFY_API_VERSION;
-  config.userdata = this;
+  sp_config.api_version = SPOTIFY_API_VERSION;
+  sp_config.userdata = this;
   // FIXME duplicate configuration string since they may change
   //       by external source
-  config.cache_location = "/tmp";//cache_location.c_str();
-  config.application_key = application_key;
-  config.callbacks.logged_in = &logged_in;
-  config.callbacks.music_delivery = &music_delivery;
-  ...;
+  sp_config.cache_location = "/tmp";//cache_location.c_str();
+  sp_config.application_key = application_key;
+  static sp_session_callbacks callbacks;
+  callbacks.logged_in = &logged_in;
+  callbacks.music_delivery = &music_delivery;
+  sp_config.callbacks = &callbacks;
+//  ...;
   thread_.start();
   // setup callbacks
 
-  thread_.queue_task([this, sp_config]() { sp_session_create(&sp_config, &session_); });
+  thread_.queue_task(base::task{[this, sp_config]() { sp_session_create(&sp_config, &session_); }});
 //  sp_error error = sp_session_create(&config, &session_);
 //  if (SP_ERROR_OK != error)
 //    THROW(EXCEPTION(spotify_error) << error_info::sp_error{error});
@@ -59,17 +63,17 @@ session::session(configuration& config)
 
 session::~session()
 {
-  thread_.queue_task([this]() { sp_session_release(session_); });
+  thread_.queue_task(base::task{[this]() { sp_session_release(session_); }});
   thread_.stop();
 }
 
 void session::log_in()
 {
-  thread_.queue_task([this]() { sp_session_login(session_,
-                                                 username,
-                                                 password,
-                                                 false,
-                                                 NULL); });
+  thread_.queue_task(base::task{[this]() { sp_session_login(session_,
+                                                      username,
+                                                      password,
+                                                      false,
+                                                      NULL); }});
 }
 
 signals::connection session::connect_logged_in(const logged_in_slot_type& slot)

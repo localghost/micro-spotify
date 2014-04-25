@@ -1,8 +1,10 @@
 #ifndef ENGINE_SESSION_H
 #define ENGINE_SESSION_H
 
+#include <boost/signals2.hpp>
 #include <libspotify/api.h>
 #include <base/thread.h>
+#include <engine/configuration.h>
 
 namespace engine {
 class session FINAL
