@@ -4,6 +4,7 @@
 #include <chrono>
 
 namespace base {
+namespace traits {
 namespace detail {
 template <bool> struct high_steady_clock;
 
@@ -19,6 +20,7 @@ template <> struct high_steady_clock<false>
 }
 
 typedef detail::high_steady_clock<std::chrono::high_resolution_clock::is_steady>::type high_steady_clock;
+}
 }
 
 #endif
