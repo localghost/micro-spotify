@@ -1,10 +1,9 @@
-#ifndef BASE_TRAITS_H
-#define BASE_TRAITS_H
+#ifndef BASE_CHRONO_H
+#define BASE_CHRONO_H
 
 #include <chrono>
 
 namespace base {
-namespace traits {
 namespace detail {
 template <bool> struct high_steady_clock;
 
@@ -20,7 +19,6 @@ template <> struct high_steady_clock<false>
 }
 
 typedef detail::high_steady_clock<std::chrono::high_resolution_clock::is_steady>::type high_steady_clock;
-}
 }
 
 #endif
