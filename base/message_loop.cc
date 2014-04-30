@@ -24,7 +24,8 @@ void message_loop::stop()
 void message_loop::queue_task(task task_, std::chrono::milliseconds delay)
 {
   // FIXME protect with mutex
-  queue_.emplace(traits::high_steady_clock::time_point{delay}, std::move(task_));
+  std::lock_guard<std::mutex> guard{queue_mutex_};
+  queue_.emplace(std::move(task_), high_steady_clock::time_point{delay});
 }
 
 void message_loop::exec()
@@ -32,7 +33,10 @@ void message_loop::exec()
   // FIXME protect with mutex
   while (active_)
   {
-    task t = queue_.pop();
+    std::unique_lock<std::mutex> guard{queue_mutex_};
+    queued_task t = queue_.top();
+    queue_.pop();
+    guard.unlock();
     t();
   }
 }
