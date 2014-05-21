@@ -32,7 +32,7 @@ const std::uint8_t application_key[] = {
     0x49,
 };
 const char username[] = "arwmar";
-const char password[] = "never1mind";
+const char password[] = "";
 }
 
 session::session(configuration& config)
