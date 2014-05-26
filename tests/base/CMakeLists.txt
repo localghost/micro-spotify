@@ -7,6 +7,7 @@ set(SRCS
     test_callable.cc
 #    test_exception.cc
     test_thread_safe_queue.cc
+    test_message_loop.cc
 )
 
 if (${CMAKE_HOST_APPLE})

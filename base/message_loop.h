@@ -5,7 +5,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <base/task.h>
-#include <base/traits.h>
+#include <base/chrono.h>
 
 namespace base {
 // Tasks will be executed on the thread the start() method was invoked on.
@@ -15,11 +15,11 @@ private:
   struct queued_task
   {
     task task_;
-    high_steady_clock::time_point when_;
+    high_steady_clock::time_point when;
 
-    friend bool operator<(const queued_task& x, const queued_task& y) const
+    friend bool operator<(const queued_task& x, const queued_task& y)
     {
-      return x.when_ < y.when_;
+      return x.when < y.when;
     }
   };
 
@@ -30,7 +30,7 @@ public:
   void stop();
 
   void queue_task(task task_,
-                  std::chrono::milliseconds delay = 0);
+                  std::chrono::milliseconds delay = std::chrono::milliseconds{0});
 
 private:
   void exec();
@@ -44,6 +44,8 @@ private:
 
   std::condition_variable waiter_;
   std::mutex waiter_mutex_;
+
+  high_steady_clock::time_point next_loop_time_;
 };
 }
 
