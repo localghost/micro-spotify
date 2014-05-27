@@ -35,7 +35,6 @@ public:
 private:
   void exec();
 
-//  std::atomic<bool> active_;
   bool active_;
 
   // TODO Rewrite to use lock-free priority queue
