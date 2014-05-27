@@ -2,6 +2,10 @@ project(micro-spotify)
 
 cmake_minimum_required(VERSION 2.8.5)
 
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Debug")
+endif ()
+
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_BUILD")
 
 if (${CMAKE_COMPILER_IS_GNUCXX})
@@ -13,6 +17,8 @@ endif (${CMAKE_COMPILER_IS_GNUCXX})
 add_definitions("-Wall")
 add_definitions("-pedantic")
 add_definitions("-Wextra")
+
+message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 find_package(PkgConfig)
 
