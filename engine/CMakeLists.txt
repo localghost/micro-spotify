@@ -1,4 +1,4 @@
-pkg_search_module(libspotify REQUIRED libspotify)
+#pkg_search_module(libspotify REQUIRED libspotify)
 
 include_directories(${libspotify_INCLUDE_DIRS})
 
@@ -10,10 +10,12 @@ link_directories(${Boost_LIBRARY_DIRS})
 set(HDRS
     configuration.h
     exception.h
-    session.h)
+#    session.h
+   )
 
 set(SRCS
-    session.cc)
+#    session.cc
+   )
 
 add_library(${TARGET_ENGINE} SHARED ${SRCS})
 target_link_libraries(${TARGET_ENGINE} ${TARGET_BASE} ${libspotify_LIBRARIES})
