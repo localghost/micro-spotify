@@ -25,6 +25,7 @@ void message_loop::stop()
 
 void message_loop::queue_task(task task_, std::chrono::milliseconds delay)
 {
+  // FIXME see https://github.com/localghost/micro-spotify/wiki/Architecture:-MessageLoop#adding-task-to-not-running-message-loop 
   bool notify_waiter = false;
   {
     std::lock_guard<std::mutex> guard{mutex_};
