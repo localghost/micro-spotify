@@ -1,13 +1,13 @@
 set(TARGET_NAME "tests-base")
 
 set(SRCS
-    test_main.cc
-    test_log.cc
-    test_configuration_element.cc
-    test_callable.cc
+    main.cc
+    log.cc
+    configuration_element.cc
+    callable.cc
 #    test_exception.cc
-    test_thread_safe_queue.cc
-    test_message_loop.cc
+    thread_safe_queue.cc
+    message_loop.cc
 )
 
 if (${CMAKE_HOST_APPLE})
