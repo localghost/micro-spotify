@@ -19,7 +19,7 @@ private:
 
     friend bool operator<(const queued_task& x, const queued_task& y)
     {
-      return x.when < y.when;
+      return x.when > y.when;
     }
   };
 
@@ -40,10 +40,8 @@ private:
 
   // TODO Rewrite to use lock-free priority queue
   std::priority_queue<queued_task> queue_;
-  std::mutex queue_mutex_;
-
+  std::mutex mutex_;
   std::condition_variable waiter_;
-  std::mutex waiter_mutex_;
 
   high_steady_clock::time_point next_loop_time_;
 };

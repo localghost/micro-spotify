@@ -1,16 +1,20 @@
 #include <boost/test/unit_test.hpp>
 
 #include <thread>
+#include <chrono>
+#include <base/task.h>
 #include <base/message_loop.h>
 
 namespace {
-message_loop loop;
+base::message_loop loop;
 
 void publish()
 {
-  loop.queue_task([]{std::cout << "task 1" << std::endl;}, 3000);
-  loop.queue_task([]{std::cout << "task 2" << std::endl;});
-  loop.queue_task([&loop]{loop.stop();}, 5000);
+  loop.queue_task(base::task{[]{std::cout << "task 1" << std::endl;}},
+                  std::chrono::milliseconds{3000});
+  loop.queue_task(base::task{[]{std::cout << "task 2" << std::endl;}});
+  loop.queue_task(base::task{[]{loop.stop();}},
+                  std::chrono::milliseconds{5000});
 }
 }
 
