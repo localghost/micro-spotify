@@ -6,34 +6,34 @@ BOOST_AUTO_TEST_SUITE(TSBaseConfigurationElement)
 
 BOOST_AUTO_TEST_CASE(TCBaseConfigurationElementNotified)
 {
-    bool pass = false;
+  bool pass = false;
 
-    base::configuration_element<std::string> ces;
-    ces.connect([&](const std::string&)
-    {
-        pass = true;
-    });
-    ces.set_value("new value");
+  base::configuration_element<std::string> ces;
+  ces.connect([&](const std::string&)
+  {
+    pass = true;
+  });
+  ces.set_value("new value");
 
-    BOOST_CHECK(pass);
+  BOOST_CHECK(pass);
 }
 
 BOOST_AUTO_TEST_CASE(TCBaseConfigurationElementNotifiedNewValue)
 {
-    bool pass = false;
+  bool pass = false;
 
-    base::configuration_element<std::string> ces{"init value"};
-    ces.connect([&](const std::string& new_value)
-    {
-        if ("new value" == new_value)
-            pass = true;
-    });
+  base::configuration_element<std::string> ces{"init value"};
+  ces.connect([&](const std::string& new_value)
+  {
+    if ("new value" == new_value)
+      pass = true;
+  });
 
-    BOOST_CHECK_EQUAL(ces.value(), "init value");
+  BOOST_CHECK_EQUAL(ces.value(), "init value");
 
-    ces.set_value("new value");
+  ces.set_value("new value");
 
-    BOOST_CHECK(pass);
+  BOOST_CHECK(pass);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

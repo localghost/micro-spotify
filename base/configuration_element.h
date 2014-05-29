@@ -11,11 +11,11 @@ namespace base {
 template<typename T>
 class configuration_element FINAL
 {
-  typedef boost::signals2::signal<void(T)> signal_type;
+  typedef boost::signals2::signal<void(T)> on_change_signal_type;
 
 public:
   typedef T value_type;
-  typedef typename signal_type::slot_type slot_type;
+  typedef typename on_change_signal_type::slot_type on_change_slot_type;
 
   configuration_element() = default;
 
@@ -37,7 +37,7 @@ public:
     on_change_(std::move(value));
   }
 
-  boost::signals2::connection connect(const slot_type& slot)
+  boost::signals2::connection connect(const on_change_slot_type& slot)
   {
     return on_change_.connect(slot);
   }
@@ -45,7 +45,7 @@ public:
 private:
   T value_;
   mutable std::mutex mutex_;
-  signal_type on_change_;
+  on_change_signal_type on_change_;
 };
 }
 
