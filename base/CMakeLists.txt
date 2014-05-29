@@ -13,4 +13,5 @@ set(SRCS
     exception.cc
     message_loop.cc)
 
-add_library(${TARGET_BASE} STATIC ${SRCS})
+add_library(${TARGET_BASE} SHARED ${SRCS})
+set_target_properties(${TARGET_BASE} PROPERTIES COMPILE_FLAGS "-fPIC")
