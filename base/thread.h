@@ -3,6 +3,7 @@
 
 #include <thread>
 #include <memory>
+#include <chrono>
 #include <base/task.h>
 #include <base/message_loop.h>
 
@@ -18,7 +19,8 @@ public:
     void start(); // necessary except for completeness?
     void stop();
 
-    void queue_task(task task_);
+    void queue_task(task task_,
+                    std::chrono::milliseconds delay = std::chrono::milliseconds{0});
 
 private:
     void exec();

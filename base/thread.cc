@@ -24,7 +24,7 @@ void thread::start()
   // FIXME NOT thread-safe
   if (thread_) return;
 
-  thread_.reset(new std::thread(std::bind(thread::exec, this)));
+  thread_.reset(new std::thread{&thread::exec, this});
 }
 
 void thread::stop()
@@ -36,12 +36,13 @@ void thread::stop()
   thread_.reset();
 }
 
-void thread::queue_task(task task_)
+void thread::queue_task(task task_,
+                        std::chrono::milliseconds delay)
 {
   // FIXME Maybe return bool(false) when thread is not active
   //       and do not add task to the queue
   assert(thread_);
-  loop_.queue_task(std::move(task_));
+  loop_.queue_task(std::move(task_), delay);
 }
 
 void thread::exec()
