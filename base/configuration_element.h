@@ -28,13 +28,14 @@ public:
     return value_;
   }
 
-  void set_value(T value)
+  configuration_element& operator=(T value)
   {
     {
       std::lock_guard<std::mutex> lock(mutex_);
       value_ = value;
     }
     on_change_(std::move(value));
+    return *this;
   }
 
   boost::signals2::connection connect(const on_change_slot_type& slot)
