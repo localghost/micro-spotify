@@ -5,7 +5,7 @@
 namespace engine {
 base::thread& global_threads_manager::get_thread(global_thread_id id)
 {
-  std::assert(thread_index(id) < thread_index(global_thread_id::thread_count));
+  assert(thread_index(id) < thread_index(global_thread_id::thread_count));
 
   static global_threads_manager gtm;
 
@@ -29,7 +29,8 @@ global_threads_manager::global_threads_manager()
 
 global_threads_manager::~global_threads_manager()
 {
-  for (std::size_t i = thread_index(global_thread_id::thread_count) - 1; i >= 0; --i)
+  std::size_t i = thread_index(global_thread_id::thread_count);
+  while (i-- != 0)
     threads_[i].stop();
 }
 }
