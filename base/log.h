@@ -21,16 +21,22 @@ public:
             const char* file,
             unsigned int line,
             const char* function);
+    ~message();
 
     std::ostream& stream();
 
-    ~message();
 private:
     std::ostringstream oss;
 };
+
+struct ostream_voidifier
+{
+  void operator&(const std::ostream&) { }
+};
+extern ostream_voidifier voidifier; 
 }
 }
- 
+
 #define LOG(Severity) \
     ::base::log::message{Severity, __FILE__, __LINE__, __FUNCTION__}.stream()
 
@@ -43,7 +49,7 @@ private:
 // TODO Verify that neither GCC nor Clang prints warning
 //      like "value computed is not used" or similar
 #define LOG_IF(Condition, Severity) \
-    (Condition) && LOG(Severity)
+    (Condition) ? static_cast<void>(0) : ::base::log::voidifier & LOG(Severity)
 
 #define LOG_INFO LOG(::base::log::severity::Info)
         

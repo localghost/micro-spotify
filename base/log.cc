@@ -18,6 +18,8 @@ const char* severity_to_string(severity severity_)
 }
 }
 
+ostream_voidifier voidifier{};
+
 message::message(severity severity_,
                  const char* file,
                  unsigned int line,
