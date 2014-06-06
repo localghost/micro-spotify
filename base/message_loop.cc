@@ -48,6 +48,7 @@ void message_loop::queue_task(task task_, std::chrono::milliseconds delay)
     waiter_.notify_one();
 }
 
+// TODO Add exception-safety
 void message_loop::exec()
 {
   while (active_)
