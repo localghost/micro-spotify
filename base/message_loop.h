@@ -1,7 +1,7 @@
 #ifndef BASE_MESSAGE_LOOP_H
 #define BASE_MESSAGE_LOOP_H
 
-#include <queue>
+#include <vector>
 #include <condition_variable>
 #include <mutex>
 #include <base/task.h>
@@ -38,7 +38,7 @@ private:
   bool active_;
 
   // TODO Rewrite to use lock-free priority queue
-  std::priority_queue<queued_task> queue_;
+  std::vector<queued_task> queue_;
   std::mutex mutex_;
   std::condition_variable waiter_;
 

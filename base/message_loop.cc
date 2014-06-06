@@ -1,5 +1,7 @@
 #include "message_loop.h"
 
+#include <algorithm>
+
 #include "log.h"
 
 namespace base {
@@ -33,11 +35,12 @@ void message_loop::queue_task(task task_, std::chrono::milliseconds delay)
 
     bool is_empty = queue_.empty();
 
-    queue_.push(queued_task{std::move(task_), high_steady_clock::now() + delay});
+    queue_.push_back(queued_task{std::move(task_), high_steady_clock::now() + delay});
+    std::push_heap(queue_.begin(), queue_.end());
 
-    if (is_empty || (queue_.top().when < next_loop_time_))
+    if (is_empty || (queue_.front().when < next_loop_time_))
     {
-      next_loop_time_ = queue_.top().when;
+      next_loop_time_ = queue_.front().when;
       notify_waiter = true;
     }
   }
@@ -61,13 +64,14 @@ void message_loop::exec()
       else
         waiter_.wait_until(guard, next_loop_time_, [this]{ return queue_.empty(); });
 
-      while (!queue_.empty() && (queue_.top().when <= high_steady_clock::now()))
+      while (!queue_.empty() && (queue_.front().when <= high_steady_clock::now()))
       {
-        tasks.push_back(std::move(queue_.top().task_));
-        queue_.pop();
+        std::pop_heap(queue_.begin(), queue_.end());
+        tasks.push_back(std::move(queue_.back().task_));
+        queue_.pop_back();
       }
 
-      if (!queue_.empty()) next_loop_time_ = queue_.top().when;
+      if (!queue_.empty()) next_loop_time_ = queue_.front().when;
     }    
     for (task& t : tasks)
       t();
