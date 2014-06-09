@@ -2,9 +2,11 @@
 
 #include <cassert>
 
+#include "compatibility.h"
+
 namespace base {
 namespace {
-thread_local thread* current_thread = nullptr;
+THREAD_LOCAL thread* current_thread = nullptr;
 }
 
 thread* thread::current()
