@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_CASE(TCBaseConfigurationElementNotified)
   {
     pass = true;
   });
-  ces.set_value("new value");
+  ces = "new value";
 
   BOOST_CHECK(pass);
 }
@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(TCBaseConfigurationElementNotifiedNewValue)
 
   BOOST_CHECK_EQUAL(ces.value(), "init value");
 
-  ces.set_value("new value");
+  ces = "new value";
 
   BOOST_CHECK(pass);
 }
