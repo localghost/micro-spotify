@@ -11,4 +11,14 @@
 #define OVERRIDE
 #endif
 
+#ifdef __APPLE_CC__
+#define THREAD_LOCAL __thread
+#elif __GNUC__
+#if SUPPORTED(CPP11)
+#define THREAD_LOCAL thread_local
+#else
+#define THREAD_LOCAL __thread
+#endif // SUPPORTED(CPP11)
+#endif // __APPLE_CC__
+
 #endif
