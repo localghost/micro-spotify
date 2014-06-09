@@ -20,5 +20,4 @@ void task::operator()()
 {
   callable_();
 }
-};
 }
