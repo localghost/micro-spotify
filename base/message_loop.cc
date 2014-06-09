@@ -1,6 +1,7 @@
 #include "message_loop.h"
 
 #include <algorithm>
+#include <boost/exception/all.hpp>
 
 #include "log.h"
 
@@ -31,7 +32,6 @@ void message_loop::queue_task(task task_, std::chrono::milliseconds delay)
   bool notify_waiter = false;
   {
     std::lock_guard<std::mutex> guard{mutex_};
-    LOG_DEBUG << "putting task";
 
     bool is_empty = queue_.empty();
 
@@ -75,7 +75,16 @@ void message_loop::exec()
       if (!queue_.empty()) next_loop_time_ = queue_.front().when;
     }    
     for (task& t : tasks)
-      t();
+    {
+      try
+      {
+        t();
+      }
+      catch (...)
+      {
+        LOG_ERROR << boost::current_exception_diagnostic_information();
+      }
+    }
   }
 }
 }
