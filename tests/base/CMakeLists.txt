@@ -4,10 +4,11 @@ set(SRCS
     main.cc
     log.cc
     configuration_element.cc
-    callable.cc
-    thread_safe_queue.cc
-    message_loop.cc
-    thread.cc
+#    callable.cc
+#    thread_safe_queue.cc
+#    message_loop.cc
+#    thread.cc
+    task.cc
 )
 
 if (${CMAKE_HOST_APPLE})

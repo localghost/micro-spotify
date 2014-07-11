@@ -18,6 +18,15 @@ task& task::operator=(task&& other)
 
 void task::operator()()
 {
-  callable_();
+  try
+  {
+    callable_();
+    waiter_.notify_all();
+  }
+  catch (...)
+  {
+    // TODO set caught exception
+    waiter_.notify_all();
+  }
 }
 }
