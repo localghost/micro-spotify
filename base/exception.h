@@ -24,13 +24,18 @@ void verbose_terminate_handler();
 #define EXCEPTION_TYPE(ClassName) \
         struct ClassName : virtual ::base::exception { }
 
-#define EXCEPTION(ClassName) \
-        ::boost::enable_error_info(ClassName{}) \
+// deprecated: use THROW instead
+//#define EXCEPTION(ClassName) \
+//        ::boost::enable_error_info(ClassName{}) \
+//            << ::boost::throw_file{__FILE__} \
+//            << ::boost::throw_line{int(__LINE__)} \
+//            << ::boost::throw_function{BOOST_CURRENT_FUNCTION}
+
+#define THROW(ExceptionObject) \
+        ::boost::throw_exception(ExceptionObject \
             << ::boost::throw_file{__FILE__} \
             << ::boost::throw_line{int(__LINE__)} \
-            << ::boost::throw_function{BOOST_CURRENT_FUNCTION}
-
-#define THROW(ExceptionObject) ::boost::throw_exception(ExceptionObject)
+            << ::boost::throw_function{BOOST_CURRENT_FUNCTION})
 
 //#define THROW(ClassName) ::boost::throw_exception(EXCEPTION(ClassName))
 
