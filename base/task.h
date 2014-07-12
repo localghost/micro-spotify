@@ -21,11 +21,11 @@ enum struct task_error_code
 typedef ::boost::error_info<struct task_error_code_tag, task_error_code> task_error_info;
 EXCEPTION_TYPE(task_error);
 
-template<typename Result>
+template<typename R>
 class task_state_result_storage
 {
 public:
-  typedef Result result_type;
+  typedef R result_type;
 
   template<typename T>
   void set_result(T&& result)
@@ -48,8 +48,8 @@ class task_state_result_storage<void>
   typedef void result_type;
 };
 
-template<typename Result>
-class task_state : public task_state_result_storage<Result>
+template<typename R>
+class task_state : public task_state_result_storage<R>
 {
 public:
   enum struct state { initialized, running, cancelled, finished };
@@ -88,11 +88,11 @@ public:
     return state_.compare_exchange_strong(expected, state::cancelled);
   }
 
-//  bool is_canceled() const
-//  {
-//    return state::cancelled == state_;
-//  }
-//
+  bool is_cancelled() const
+  {
+    return state::cancelled == state_;
+  }
+
 //  task_state::state get_state() const
 //  {
 //    return state_;
@@ -133,8 +133,8 @@ public:
     wait();
 
     // FIXME
-    // if (cancelled)
-    //  THROW(task_error{} << task_error_info{task_error_code::cancelled});
+    if (state_->is_cancelled())
+      THROW(task_error{} << task_error_info{task_error_code::cancelled});
 
     std::exception_ptr exception = state_->get_exception();
     if (nullptr != exception)
@@ -171,6 +171,8 @@ template<>
 class task_handle<void> FINAL
 {
 public:
+  typedef void result_type;
+
   task_handle() = default;
   task_handle(const task_handle&) = delete;
   task_handle(task_handle&&) = default;
@@ -178,13 +180,13 @@ public:
   void operator=(const task_handle&) = delete;
   task_handle& operator=(task_handle&&) = default;
 
-  void get() const
+  result_type get() const
   {
     wait();
 
     // FIXME
-    // if (cancelled)
-    //  THROW(task_error{} << task_error_info{task_error_code::cancelled});
+    if (state_->is_cancelled())
+      THROW(task_error{} << task_error_info{task_error_code::cancelled});
 
     std::exception_ptr exception = state_->get_exception();
     if (nullptr != exception)
@@ -210,39 +212,65 @@ public:
 private:
   template<typename> friend class task;
 
-  explicit task_handle(const std::shared_ptr<task_state<void>>& state) : state_(state) { }
+  explicit task_handle(const std::shared_ptr<task_state<result_type>>& state) : state_(state) { }
 
-  std::shared_ptr<task_state<void>> state_;
+  std::shared_ptr<task_state<result_type>> state_;
 };
 
-template<typename Result, typename ...Args>
-class task<Result(Args...)> FINAL
+template<typename R>
+class task FINAL
 {
 public:
+  typedef R result_type;
+
   task() = default;
 
   // TODO Accepting only callable enforces to use std::bind() if arguments to the callable
   //      should be passed. Should this ctor accept also arguments, similarly to e.g. std::packaged_task??
+  //      Should it be protected against too perfect fwd? (guess so, it could produce some weird errors)
+  // This looks like a premature optimization, is it? Isn't std::bind() optimized already for callables
+  // that don't take any arguments?
   template<typename F>
-  explicit task(F&& callable) 
+  explicit task(F&& callable)
     : callable_(std::forward<F>(callable)),
-      state_(new task_state<Result>)
+      state_(new task_state<result_type>)
+  { }
+
+  // TODO Accepting only callable enforces to use std::bind() if arguments to the callable
+  //      should be passed. Should this ctor accept also arguments, similarly to e.g. std::packaged_task??
+  template<typename F, typename ...Args>
+  explicit task(F&& callable, Args&&... args)
+    : callable_(std::bind(std::forward<F>(callable), std::forward<Args>(args)...)),
+      state_(new task_state<result_type>)
   { }
 
   task(const task&) = delete;
   task(task&& other) = default;
 
+  // FIXME and copy to task<void>
+  ~task()
+  {
+    if (state_)
+    {
+      // FIXME if (handle_acquired())
+      if (!state_->is_ready())
+        state_->set_exception(std::make_exception_ptr(
+              task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
+    }
+  }
+
   task& operator=(const task&) = delete;
   task& operator=(task&& other) = default;
 
-  task_handle<Result> get_handle() const
+  task_handle<result_type> get_handle() const
   {
-    // FIXME if this gets called but task is not invoked then in dtor set exception
+    // FIXME if this function is called but task is not invoked then in dtor set exception
     //       in the shared state (task_error_code::not_run)
+
     if (!state_)
       THROW(task_error{} << task_error_info{task_error_code::no_state});
 
-    return task_handle<Result>{state_};
+    return task_handle<result_type>{state_};
   }
 
   void operator()()
@@ -268,34 +296,53 @@ public:
   }
 
 private:
-  std::function<Result(Args...)> callable_;
-  std::shared_ptr<task_state<Result>> state_;
+  std::function<result_type()> callable_;
+  std::shared_ptr<task_state<result_type>> state_;
 };
 
-template<typename ...Args>
-class task<void(Args...)> FINAL
+template<>
+class task<void> FINAL
 {
 public:
+  typedef void result_type;
+
   task() = default;
 
   template<typename F>
-  explicit task(F&& callable) 
+  explicit task(F&& callable)
     : callable_(std::forward<F>(callable)),
-      state_(new task_state<void>)
+      state_(new task_state<result_type>)
+  { }
+
+  template<typename F, typename ...Args>
+  explicit task(F&& callable, Args&&... args) 
+    : callable_(std::bind(std::forward<F>(callable), std::forward<Args>(args)...)),
+      state_(new task_state<result_type>)
   { }
 
   task(const task&) = delete;
   task(task&& other) = default;
 
+  ~task()
+  {
+    if (state_)
+    {
+      // FIXME if (handle_acquired())
+      if (!state_->is_ready())
+        state_->set_exception(std::make_exception_ptr(
+              task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
+    }
+  }
+
   task& operator=(const task&) = delete;
   task& operator=(task&& other) = default;
 
-  task_handle<void> get_handle() const
+  task_handle<result_type> get_handle() const
   {
     if (!state_)
       THROW(task_error{} << task_error_info{task_error_code::no_state});
 
-    return task_handle<void>{state_};
+    return task_handle<result_type>{state_};
   }
 
   void operator()()
@@ -319,8 +366,8 @@ public:
   }
 
 private:
-  std::function<void(Args...)> callable_;
-  std::shared_ptr<task_state<void>> state_;
+  std::function<result_type()> callable_;
+  std::shared_ptr<task_state<result_type>> state_;
 };
 }
 

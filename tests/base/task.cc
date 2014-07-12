@@ -5,10 +5,17 @@
 
 BOOST_AUTO_TEST_SUITE(TSBaseTask)
 
+BOOST_AUTO_TEST_CASE(TCBaseEmptyTask)
+{
+  base::task<void> t{[]{ }};
+  t();
+  t.get_handle().wait();
+}
+
 BOOST_AUTO_TEST_CASE(TCBaseTask)
 {
   int result = 0;
-  base::task<void()> t{[&result] { result = 42; }};
+  base::task<void> t{[](int& result) { result = 42; }, std::ref(result)};
   t();
   t.get_handle().wait();
   BOOST_CHECK_EQUAL(result, 42);
@@ -16,7 +23,7 @@ BOOST_AUTO_TEST_CASE(TCBaseTask)
 
 BOOST_AUTO_TEST_CASE(TCBaseTaskResult)
 {
-  base::task<int()> t{[] { return 42; }};
+  base::task<int> t{[] { return 42; }};
   t();
   int result = t.get_handle().get();
   BOOST_CHECK_EQUAL(result, 42);
@@ -27,7 +34,7 @@ BOOST_AUTO_TEST_CASE(TCBaseTaskException)
   struct my_exception : std::exception {};
 
   bool exception_thrown = false;
-  base::task<void()> t{[] { throw my_exception{}; }};
+  base::task<void> t{[] { throw my_exception{}; }};
   t();
   try
   {
@@ -42,7 +49,7 @@ BOOST_AUTO_TEST_CASE(TCBaseTaskException)
 
 BOOST_AUTO_TEST_CASE(TCBaseTaskCancel)
 {
-  base::task<int()> t{[] { return 42; }};
+  base::task<int> t{[] { return 42; }};
   auto handle = t.get_handle();
   handle.cancel();
   t();
@@ -53,7 +60,7 @@ BOOST_AUTO_TEST_CASE(TCBaseTaskGetResultWhenCancelled)
 {
   bool exception_thrown = false;
 
-  base::task<int()> t{[] { return 42; }};
+  base::task<int> t{[] { return 42; }};
   auto handle = t.get_handle();
   handle.cancel();
   t();
@@ -70,11 +77,12 @@ BOOST_AUTO_TEST_CASE(TCBaseTaskGetResultWhenCancelled)
 }
 
 // why discard such functionality?
+// maybe handle should be more like shared_future?
 BOOST_AUTO_TEST_CASE(TCBaseTaskGetHandleMultipleException)
 {
   bool exception_thrown = false;
 
-  base::task<int()> t{[] { return 42; }};
+  base::task<int> t{[] { return 42; }};
   t.get_handle();
   try 
   {
@@ -92,7 +100,7 @@ BOOST_AUTO_TEST_CASE(TCBaseTaskVoidGetHandleMultipleException)
 {
   bool exception_thrown = false;
 
-  base::task<void()> t{[] { }};
+  base::task<void> t{[] { }};
   t.get_handle();
   try 
   {
@@ -108,7 +116,7 @@ BOOST_AUTO_TEST_CASE(TCBaseTaskVoidGetHandleMultipleException)
 
 BOOST_AUTO_TEST_CASE(TCBaseTaskThread)
 {
-  base::task<int()> t{[] { return 42; }};
+  base::task<int> t{[] { return 42; }};
   auto handle = t.get_handle();
 
   std::thread th{std::move(t)};
