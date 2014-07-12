@@ -31,11 +31,13 @@ void verbose_terminate_handler();
 //            << ::boost::throw_line{int(__LINE__)} \
 //            << ::boost::throw_function{BOOST_CURRENT_FUNCTION}
 
-#define THROW(ExceptionObject) \
-        ::boost::throw_exception(ExceptionObject \
-            << ::boost::throw_file{__FILE__} \
+#define EXCEPTION_LOCATION \
+            ::boost::throw_file{__FILE__} \
             << ::boost::throw_line{int(__LINE__)} \
-            << ::boost::throw_function{BOOST_CURRENT_FUNCTION})
+            << ::boost::throw_function{BOOST_CURRENT_FUNCTION}
+
+#define THROW(ExceptionObject) \
+        ::boost::throw_exception(ExceptionObject << EXCEPTION_LOCATION)
 
 //#define THROW(ClassName) ::boost::throw_exception(EXCEPTION(ClassName))
 
