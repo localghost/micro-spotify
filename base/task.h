@@ -254,8 +254,11 @@ public:
     {
       // FIXME if (handle_acquired())
       if (!state_->is_ready())
+      {
         state_->set_exception(std::make_exception_ptr(
               task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
+        state_->make_ready();
+      }
     }
   }
 
@@ -329,8 +332,11 @@ public:
     {
       // FIXME if (handle_acquired())
       if (!state_->is_ready())
+      {
         state_->set_exception(std::make_exception_ptr(
               task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
+        state_->make_ready();
+      }
     }
   }
 
