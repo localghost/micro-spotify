@@ -6,8 +6,7 @@
 namespace base {
 void verbose_terminate_handler()
 {
-    auto current_exception = std::current_exception();
-    if (current_exception)
+    if (std::current_exception())
     {
         try
         {
