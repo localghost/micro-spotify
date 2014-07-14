@@ -252,8 +252,7 @@ public:
   {
     if (state_)
     {
-      // FIXME if (handle_acquired())
-      if (!state_->is_ready())
+      if (handle_acquired && !state_->is_ready())
       {
         state_->set_exception(std::make_exception_ptr(
               task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
@@ -272,6 +271,8 @@ public:
 
     if (!state_)
       THROW(task_error{} << task_error_info{task_error_code::no_state});
+
+    handle_acquired = true;
 
     return task_handle<result_type>{state_};
   }
@@ -301,6 +302,7 @@ public:
 private:
   std::function<result_type()> callable_;
   std::shared_ptr<task_state<result_type>> state_;
+  mutable bool handle_acquired = false; // does it need to be atomic? does it need to be mutable (should get_handle() be const)?
 };
 
 template<>
@@ -330,8 +332,7 @@ public:
   {
     if (state_)
     {
-      // FIXME if (handle_acquired())
-      if (!state_->is_ready())
+      if (handle_acquired && !state_->is_ready())
       {
         state_->set_exception(std::make_exception_ptr(
               task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
@@ -347,6 +348,8 @@ public:
   {
     if (!state_)
       THROW(task_error{} << task_error_info{task_error_code::no_state});
+
+    handle_acquired = true;
 
     return task_handle<result_type>{state_};
   }
@@ -374,6 +377,7 @@ public:
 private:
   std::function<result_type()> callable_;
   std::shared_ptr<task_state<result_type>> state_;
+  mutable bool handle_acquired = false;
 };
 }
 
