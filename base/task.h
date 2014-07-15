@@ -16,7 +16,8 @@ enum struct task_error_code
 {
   no_state,
   cancelled,
-  not_run
+  not_run,
+  already_called
 };
 typedef ::boost::error_info<struct task_error_code_tag, task_error_code> task_error_info;
 EXCEPTION_TYPE(task_error);
@@ -247,7 +248,6 @@ public:
   task(const task&) = delete;
   task(task&& other) = default;
 
-  // FIXME and copy to task<void>
   ~task()
   {
     if (state_)
@@ -266,9 +266,6 @@ public:
 
   task_handle<result_type> get_handle() const
   {
-    // FIXME if this function is called but task is not invoked then in dtor set exception
-    //       in the shared state (task_error_code::not_run)
-
     if (!state_)
       THROW(task_error{} << task_error_info{task_error_code::no_state});
 
@@ -282,9 +279,13 @@ public:
 
     if (callable_)
     {
-      // FIXME differentiate between cancelled and already running
-      //       and in case of the latter one throw exception
-      if (!state_->mark_running()) return;
+      if (!state_->mark_running())
+      {
+        // This should work as user can cancel only if task is in task_state::initialized state
+        if (state_->is_cancelled()) return;
+        THROW(task_error{} << task_error_info{task_error_code::already_called});
+      }
+
       try
       {
         state_->set_result(callable_());
@@ -293,6 +294,7 @@ public:
       {
           state_->set_exception(std::current_exception());
       }
+
       state_->make_ready();
     }
   }
@@ -356,7 +358,13 @@ public:
 
     if (callable_) // is it necessary? yeap, sb. could pass empty std::function
     {
-      if (!state_->mark_running()) return;
+      if (!state_->mark_running())
+      {
+        // This should work as user can cancel only if task is in task_state::initialized state
+        if (state_->is_cancelled()) return;
+        THROW(task_error{} << task_error_info{task_error_code::already_called});
+      }
+
       try
       {
         callable_();
@@ -365,6 +373,7 @@ public:
       {
         state_->set_exception(std::current_exception());
       }
+
       state_->make_ready();
     }
   }
