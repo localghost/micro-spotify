@@ -7,7 +7,7 @@ set(HDRS
     exception.h
     log.h
     message_loop.h
-#    thread.h
+    thread.h
     task.h
    )
 
@@ -15,8 +15,7 @@ set(SRCS
     exception.cc
     log.cc
     message_loop.cc
-#    task.cc
-#    thread.cc
+    thread.cc
    )
 
 add_library(${TARGET_BASE} SHARED ${SRCS})

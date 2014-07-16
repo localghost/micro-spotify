@@ -7,7 +7,7 @@ set(SRCS
 #    callable.cc
 #    thread_safe_queue.cc
     message_loop.cc
-#    thread.cc
+    thread.cc
     task.cc
 )
 
