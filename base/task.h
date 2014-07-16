@@ -1,11 +1,13 @@
 #ifndef BASE_TASK_H
 #define BASE_TASK_H
 
-#include <utility>
 #include <memory>
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
 #include <functional>
 #include <exception>
+#include <type_traits>
 #include <base/exception.h>
 #include <base/compatibility.h>
 
@@ -382,6 +384,13 @@ private:
   std::function<result_type()> callable_;
   std::shared_ptr<task_state<result_type>> state_;
 };
+
+template<typename F, typename ...Args>
+task<typename std::result_of<F(Args...)>::type> make_task(F&& f, Args&&... args)
+{
+  typedef typename std::result_of<F(Args...)>::type result_type;
+  return task<result_type>{std::forward<F>(f), std::forward<Args>(args)...};
+}
 }
 
 #endif

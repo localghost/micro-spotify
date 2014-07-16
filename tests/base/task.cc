@@ -1,5 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
+#include <type_traits>
 #include <thread>
 #include <base/task.h>
 
@@ -196,6 +197,38 @@ BOOST_AUTO_TEST_CASE(TCExecuteOnDifferentThread)
   std::thread th{std::move(t)};
   BOOST_CHECK_EQUAL(handle.get(), 42);
   th.join();
+}
+
+BOOST_AUTO_TEST_CASE(TCMakeTask1)
+{
+  auto t = base::make_task([] {});
+  BOOST_CHECK((std::is_same<decltype(t)::result_type, void>::value));
+}
+
+BOOST_AUTO_TEST_CASE(TCMakeTask2)
+{
+  auto t = base::make_task([] { return 42; });
+  BOOST_CHECK((std::is_same<decltype(t)::result_type, int>::value));
+}
+
+BOOST_AUTO_TEST_CASE(TCMakeTask3)
+{
+  auto t = base::make_task([](int i) { return i; }, 42);
+  BOOST_CHECK((std::is_same<decltype(t)::result_type, int>::value));
+
+  t();
+  BOOST_CHECK_EQUAL(t.get_handle().get(), 42);
+}
+
+BOOST_AUTO_TEST_CASE(TCMakeTask4)
+{
+  int i = 0;
+  auto t = base::make_task([](int& i) { i = 42; }, std::ref(i));
+  BOOST_CHECK((std::is_same<decltype(t)::result_type, void>::value));
+
+  t();
+  t.get_handle().wait();
+  BOOST_CHECK_EQUAL(i, 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
