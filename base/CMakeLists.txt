@@ -6,7 +6,7 @@ link_directories(${Boost_LIBRARY_DIRS})
 set(HDRS
     exception.h
     log.h
-#    message_loop.h
+    message_loop.h
 #    thread.h
     task.h
    )
@@ -14,7 +14,7 @@ set(HDRS
 set(SRCS
     exception.cc
     log.cc
-#    message_loop.cc
+    message_loop.cc
 #    task.cc
 #    thread.cc
    )
