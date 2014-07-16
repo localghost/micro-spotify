@@ -6,8 +6,8 @@ set(SRCS
     configuration_element.cc
 #    callable.cc
 #    thread_safe_queue.cc
-#    message_loop.cc
-#    thread.cc
+    message_loop.cc
+    thread.cc
     task.cc
 )
 

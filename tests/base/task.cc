@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(TCReturnException)
 {
   struct my_exception : std::exception {};
 
-  bool exception_thrown = false;
+  bool passed = false;
   base::task<void> t{[] { throw my_exception{}; }};
   t();
   try
@@ -88,9 +88,9 @@ BOOST_AUTO_TEST_CASE(TCReturnException)
   }
   catch (my_exception)
   {
-    exception_thrown = true;
+    passed = true;
   }
-  BOOST_CHECK_EQUAL(exception_thrown, true);
+  BOOST_CHECK_EQUAL(passed, true);
 }
 
 BOOST_AUTO_TEST_CASE(TCCancel)
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(TCExecuteCancelledTask)
 
 BOOST_AUTO_TEST_CASE(TCGetResultWhenCancelled)
 {
-  bool exception_thrown = true;
+  bool passed = true;
   base::task<int> t{[] { return 42; }};
   auto handle = t.get_handle();
   handle.cancel();
@@ -124,16 +124,16 @@ BOOST_AUTO_TEST_CASE(TCGetResultWhenCancelled)
     const base::task_error_code* code =
       boost::get_error_info<base::task_error_info>(e);
     if (code && (base::task_error_code::cancelled == *code))
-      exception_thrown = true;
+      passed = true;
   }
-  BOOST_CHECK_EQUAL(exception_thrown, true);
+  BOOST_CHECK_EQUAL(passed, true);
 }
 
 // why discard such functionality?
 // maybe handle should be more like shared_future?
 BOOST_AUTO_TEST_CASE(TCGetHandleMultipleException)
 {
-  bool exception_thrown = false;
+  bool passed = false;
 
   base::task<int> t{[] { return 42; }};
   t.get_handle();
@@ -143,15 +143,15 @@ BOOST_AUTO_TEST_CASE(TCGetHandleMultipleException)
   }
   catch (base::task_error)
   {
-    exception_thrown = true;
+    passed = true;
   }
   
-  BOOST_CHECK_EQUAL(exception_thrown, true);
+  BOOST_CHECK_EQUAL(passed, true);
 }
 
 BOOST_AUTO_TEST_CASE(TCVoidGetHandleMultipleException)
 {
-  bool exception_thrown = false;
+  bool passed = false;
 
   base::task<void> t{[] { }};
   t.get_handle();
@@ -161,10 +161,31 @@ BOOST_AUTO_TEST_CASE(TCVoidGetHandleMultipleException)
   }
   catch (base::task_error)
   {
-    exception_thrown = true;
+    passed = true;
   }
   
-  BOOST_CHECK_EQUAL(exception_thrown, true);
+  BOOST_CHECK_EQUAL(passed, true);
+}
+
+BOOST_AUTO_TEST_CASE(TCExecuteTaskMultipleTimes)
+{
+  bool passed = false;
+
+  base::task<void> t{[]{}};
+  t();
+  try
+  {
+    t();
+  }
+  catch (const base::task_error& e)
+  {
+    const base::task_error_code* code =
+      boost::get_error_info<base::task_error_info>(e);
+    if (code && (base::task_error_code::already_called == *code))
+      passed = true;
+  }
+
+  BOOST_CHECK_EQUAL(passed, true);
 }
 
 BOOST_AUTO_TEST_CASE(TCExecuteOnDifferentThread)

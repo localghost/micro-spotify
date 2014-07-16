@@ -2,19 +2,23 @@
 
 #include <thread>
 #include <chrono>
+#include <functional>
 #include <base/task.h>
 #include <base/message_loop.h>
 
 namespace {
-base::message_loop loop;
-
-void publish()
+void publish(base::message_loop& loop)
 {
-  loop.queue_task(base::task{[]{std::cout << "task 1" << std::endl;}},
+  loop.queue_task(base::task<void>{[]{std::cout << "task 1" << std::endl;}},
                   std::chrono::milliseconds{3000});
-  loop.queue_task(base::task{[]{std::cout << "task 2" << std::endl;}});
-  loop.queue_task(base::task{[]{loop.stop();}},
+  loop.queue_task(base::task<void>{[]{std::cout << "task 2" << std::endl;}});
+  loop.queue_task(base::task<void>{[&loop]{loop.stop();}},
                   std::chrono::milliseconds{5000});
+}
+
+void subscribe(base::message_loop& loop)
+{
+  loop.start();
 }
 }
 
@@ -22,9 +26,11 @@ BOOST_AUTO_TEST_SUITE(TSBaseMessageLoop)
 
 BOOST_AUTO_TEST_CASE(TCBaseMessageLoop)
 {
-  std::thread publisher{&publish};
-  loop.start();
+  base::message_loop loop;
+  std::thread subscriber{&subscribe, std::ref(loop)};
+  std::thread publisher{&publish, std::ref(loop)};
   publisher.join();
+  subscriber.join();
 }
 
 //BOOST_AUTO_TEST_CASE(TCEncodeLongString)

@@ -6,8 +6,6 @@
 #include "log.h"
 
 namespace base {
-message_loop::message_loop() : active_(false) { }
-
 void message_loop::start()
 {
   if (active_) return;
@@ -23,10 +21,10 @@ void message_loop::stop()
 //
 //  active_ = false;
 
-  queue_task(task{[this]() { active_ = false; }});
+  queue_task(task<void>{[this]() { active_ = false; }});
 }
 
-void message_loop::queue_task(task task_, std::chrono::milliseconds delay)
+void message_loop::queue_task_(std::unique_ptr<task_model_base>&& task_, std::chrono::milliseconds delay)
 {
   // FIXME see https://github.com/localghost/micro-spotify/wiki/Architecture:-MessageLoop#adding-task-to-not-running-message-loop 
   bool notify_waiter = false;
@@ -53,7 +51,7 @@ void message_loop::exec()
 {
   while (active_)
   {
-    std::vector<task> tasks;
+    std::vector<queued_task> tasks;
     {
       std::unique_lock<std::mutex> guard{mutex_};
 
@@ -68,23 +66,14 @@ void message_loop::exec()
       while (!queue_.empty() && (queue_.front().when <= high_steady_clock::now()))
       {
         std::pop_heap(queue_.begin(), queue_.end());
-        tasks.push_back(std::move(queue_.back().task_));
+        tasks.push_back(std::move(queue_.back()));
         queue_.pop_back();
       }
 
       if (!queue_.empty()) next_loop_time_ = queue_.front().when;
     }    
-    for (task& t : tasks)
-    {
-      try
-      {
-        t();
-      }
-      catch (...)
-      {
-        LOG_ERROR << boost::current_exception_diagnostic_information();
-      }
-    }
+    for (queued_task& t : tasks)
+      t.task_->call();
   }
 }
 }

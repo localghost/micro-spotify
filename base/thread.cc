@@ -14,37 +14,25 @@ thread* thread::current()
   return current_thread;
 }
 
-thread::thread() : thread_(nullptr) { }
-
 thread::~thread()
 {
-  assert(!thread_);
+  assert(!thread_.joinable());
 }
 
 void thread::start()
 {
   // FIXME NOT thread-safe
-  if (thread_) return;
+  if (thread_.joinable()) return;
 
-  thread_.reset(new std::thread{&thread::exec, this});
+  thread_ = std::thread{&thread::exec, this};
 }
 
 void thread::stop()
 {
-  if (!thread_) return;
+  if (!thread_.joinable()) return;
 
   loop_.stop();
-  thread_->join();
-  thread_.reset();
-}
-
-void thread::queue_task(task task_,
-                        std::chrono::milliseconds delay)
-{
-  // FIXME Maybe return bool(false) when thread is not active
-  //       and do not add task to the queue
-  assert(thread_);
-  loop_.queue_task(std::move(task_), delay);
+  thread_.join();
 }
 
 void thread::exec()
