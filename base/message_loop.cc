@@ -21,7 +21,7 @@ void message_loop::stop()
 //
 //  active_ = false;
 
-  queue_task(task<void>{[this]() { active_ = false; }});
+  queue_task(make_task([this]() { active_ = false; }));
 }
 
 void message_loop::queue_task_(std::unique_ptr<task_model_base>&& task_, std::chrono::milliseconds delay)
