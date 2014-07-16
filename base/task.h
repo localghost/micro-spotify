@@ -252,7 +252,7 @@ public:
   {
     if (state_)
     {
-      if ((state_.use_count() > 1) && !state_->is_ready())
+      if (!state_.unique() && !state_->is_ready())
       {
         state_->set_exception(std::make_exception_ptr(
               task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
@@ -331,7 +331,7 @@ public:
   {
     if (state_)
     {
-      if ((state_.use_count() > 1) && !state_->is_ready())
+      if (!state_.unique() && !state_->is_ready())
       {
         state_->set_exception(std::make_exception_ptr(
               task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
