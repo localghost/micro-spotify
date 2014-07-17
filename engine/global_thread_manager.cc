@@ -1,23 +1,23 @@
-#include "global_threads_manager.h"
+#include "global_thread_manager.h"
 
 #include <cassert>
 
 namespace engine {
-base::thread& global_threads_manager::get_thread(global_thread_id id)
+base::thread& global_thread_manager::get_thread(global_thread_id id)
 {
   assert(thread_index(id) < thread_index(global_thread_id::thread_count));
 
-  static global_threads_manager gtm;
+  static global_thread_manager gtm;
 
   return gtm.threads_[thread_index(id)];
 }
 
-inline std::size_t global_threads_manager::thread_index(global_thread_id id)
+inline std::size_t global_thread_manager::thread_index(global_thread_id id)
 {
   return static_cast<std::size_t>(id);
 }
 
-global_threads_manager::global_threads_manager()
+global_thread_manager::global_thread_manager()
 {
   // FIXME What if some code in main_thread queues a task to a spotify_thread
   //       before it is started? Currently, an assert will be thrown so either
@@ -27,7 +27,7 @@ global_threads_manager::global_threads_manager()
     threads_[i].start();
 }
 
-global_threads_manager::~global_threads_manager()
+global_thread_manager::~global_thread_manager()
 {
   std::size_t i = thread_index(global_thread_id::thread_count);
   while (i-- != 0)
