@@ -23,6 +23,19 @@ BOOST_AUTO_TEST_CASE(TCGetHandle)
   t.get_handle();
 }
 
+BOOST_AUTO_TEST_CASE(TCHandleValid)
+{
+  auto t = base::make_task([]{});
+  auto handle = t.get_handle();
+  BOOST_CHECK_EQUAL(handle.is_valid(), true);
+}
+
+BOOST_AUTO_TEST_CASE(TCHandleInvalid)
+{
+  base::task_handle<void> handle;
+  BOOST_CHECK_EQUAL(handle.is_valid(), false);
+}
+
 BOOST_AUTO_TEST_CASE(TCGetHandleOfExecutedTask)
 {
   base::task<void> t{[]{ }};

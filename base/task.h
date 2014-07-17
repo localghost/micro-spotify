@@ -165,6 +165,11 @@ public:
     return state_->cancel();
   }
 
+  bool is_valid() const
+  {
+    return bool(state_);
+  }
+
 private:
   template<typename> friend class task;
 
@@ -216,6 +221,11 @@ public:
       THROW(task_error{} << task_error_info{task_error_code::no_state});
 
     return state_->cancel();
+  }
+
+  bool is_valid() const
+  {
+    return bool(state_);
   }
 
 private:
