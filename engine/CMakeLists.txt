@@ -15,12 +15,12 @@ set(HDRS
     configuration.h
     exception.h
     session.h
-    global_threads_manager.h
+    global_thread_manager.h
    )
 
 set(SRCS
-    session.cc
-    global_threads_manager.cc
+#    session.cc
+    global_thread_manager.cc
    )
 
 add_library(${TARGET_ENGINE} SHARED ${SRCS})
