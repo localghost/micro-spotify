@@ -8,6 +8,7 @@
 #include <functional>
 #include <exception>
 #include <type_traits>
+#include <boost/scope_exit.hpp>
 #include <base/exception.h>
 #include <base/compatibility.h>
 
@@ -19,7 +20,8 @@ enum struct task_error_code
   no_state,
   cancelled,
   not_run,
-  already_called
+  already_called,
+  handle_already_acquired
 };
 typedef ::boost::error_info<struct task_error_code_tag, task_error_code> task_error_info;
 EXCEPTION_TYPE(task_error);
@@ -38,7 +40,7 @@ public:
 
   result_type get_result() const
   {
-    return *static_cast<const result_type*>(static_cast<const void*>(&result_));
+    return std::move(*static_cast<const result_type*>(static_cast<const void*>(&result_)));
   }
 
 private:
@@ -59,18 +61,18 @@ public:
 
   task_state() : state_{state::initialized} {}
 
-  bool is_ready() const
+  bool is_ready() const noexcept
   {
     return (state_ == state::cancelled || state_ == state::finished);
   }
 
-  void make_ready()
+  void make_ready() noexcept
   {
     state_ = state::finished;
     wait_cv_.notify_all();
   }
 
-  bool mark_running()
+  bool mark_running() noexcept
   {
     state expected = state::initialized;
     return state_.compare_exchange_strong(expected, state::running);
@@ -85,13 +87,13 @@ public:
     wait_cv_.wait(lock, std::bind(&task_state::is_ready, this));
   }
 
-  bool cancel()
+  bool cancel() noexcept
   {
     state expected = state::initialized;
     return state_.compare_exchange_strong(expected, state::cancelled);
   }
 
-  bool is_cancelled() const
+  bool is_cancelled() const noexcept
   {
     return state::cancelled == state_;
   }
@@ -101,12 +103,12 @@ public:
 //    return state_;
 //  }
 
-  void set_exception(std::exception_ptr exception)
+  void set_exception(std::exception_ptr exception) noexcept
   {
     exception_ = exception;
   }
 
-  std::exception_ptr get_exception() const
+  std::exception_ptr get_exception() const noexcept
   {
     return exception_;
   }
@@ -131,11 +133,12 @@ public:
   void operator=(const task_handle&) = delete;
   task_handle& operator=(task_handle&&) = default;
 
-  result_type get() const
+  result_type get()
   {
     wait();
 
-    // FIXME
+    BOOST_SCOPE_EXIT_ALL(this) { state_.reset(); };
+
     if (state_->is_cancelled())
       THROW(task_error{} << task_error_info{task_error_code::cancelled});
 
@@ -165,7 +168,8 @@ public:
 private:
   template<typename> friend class task;
 
-  explicit task_handle(const std::shared_ptr<task_state<result_type>>& state) : state_(state) { }
+  explicit task_handle(const std::shared_ptr<task_state<result_type>>& state) noexcept
+    : state_(state) { }
 
   std::shared_ptr<task_state<result_type>> state_;
 };
@@ -183,9 +187,11 @@ public:
   void operator=(const task_handle&) = delete;
   task_handle& operator=(task_handle&&) = default;
 
-  result_type get() const
+  result_type get()
   {
     wait();
+
+    BOOST_SCOPE_EXIT_ALL(this) { state_.reset(); };
 
     // FIXME
     if (state_->is_cancelled())
@@ -215,7 +221,8 @@ public:
 private:
   template<typename> friend class task;
 
-  explicit task_handle(const std::shared_ptr<task_state<result_type>>& state) : state_(state) { }
+  explicit task_handle(const std::shared_ptr<task_state<result_type>>& state) noexcept
+    : state_(state) { }
 
   std::shared_ptr<task_state<result_type>> state_;
 };
@@ -248,13 +255,18 @@ public:
   { }
 
   task(const task&) = delete;
-  task(task&& other) = default;
+  task(task&& other)
+  {
+    callable_ = std::move(other.callable_);
+    state_ = std::move(other.state_);
+    handle_acquired_.store(handle_acquired_.load(std::memory_order_relaxed), std::memory_order_relaxed); 
+  }
 
   ~task()
   {
     if (state_)
     {
-      if (!state_.unique() && !state_->is_ready())
+      if (handle_acquired_.load(std::memory_order_relaxed) && !state_->is_ready())
       {
         state_->set_exception(std::make_exception_ptr(
               task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
@@ -270,6 +282,10 @@ public:
   {
     if (!state_)
       THROW(task_error{} << task_error_info{task_error_code::no_state});
+
+    bool expected = false;
+    if (!handle_acquired_.compare_exchange_strong(expected, true))
+      THROW(task_error{} << task_error_info{task_error_code::handle_already_acquired});
 
     return task_handle<result_type>{state_};
   }
@@ -304,6 +320,8 @@ public:
 private:
   std::function<result_type()> callable_;
   std::shared_ptr<task_state<result_type>> state_;
+  // TODO compare performance against std::atomic<bool>?
+  mutable std::atomic<bool> handle_acquired_{false};
 };
 
 template<>
@@ -327,13 +345,18 @@ public:
   { }
 
   task(const task&) = delete;
-  task(task&& other) = default;
+  task(task&& other)
+  {
+    callable_ = std::move(other.callable_);
+    state_ = std::move(other.state_);
+    handle_acquired_.store(handle_acquired_.load(std::memory_order_relaxed), std::memory_order_relaxed); 
+  }
 
   ~task()
   {
     if (state_)
     {
-      if (!state_.unique() && !state_->is_ready())
+      if (handle_acquired_.load(std::memory_order_relaxed) && !state_->is_ready())
       {
         state_->set_exception(std::make_exception_ptr(
               task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
@@ -349,6 +372,11 @@ public:
   {
     if (!state_)
       THROW(task_error{} << task_error_info{task_error_code::no_state});
+
+    bool expected = false;
+    // this could be memory_order_acq_rel operation, or maybe even relaxed?
+    if (!handle_acquired_.compare_exchange_strong(expected, true))
+      THROW(task_error{} << task_error_info{task_error_code::handle_already_acquired});
 
     return task_handle<result_type>{state_};
   }
@@ -383,6 +411,7 @@ public:
 private:
   std::function<result_type()> callable_;
   std::shared_ptr<task_state<result_type>> state_;
+  mutable std::atomic<bool> handle_acquired_{false};
 };
 
 template<typename F, typename ...Args>

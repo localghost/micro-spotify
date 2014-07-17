@@ -6,10 +6,6 @@
 
 BOOST_AUTO_TEST_SUITE(TSTask)
 
-// This two test cases test feature that most probably won't be implemented
-BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(TCGetHandleMultipleException, 1)
-BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(TCVoidGetHandleMultipleException, 1)
-
 BOOST_AUTO_TEST_CASE(TCCreateTask)
 {
   base::task<void> t{[]{ }};
@@ -130,8 +126,27 @@ BOOST_AUTO_TEST_CASE(TCGetResultWhenCancelled)
   BOOST_CHECK_EQUAL(passed, true);
 }
 
-// why discard such functionality?
-// maybe handle should be more like shared_future?
+BOOST_AUTO_TEST_CASE(TCGetResultMultipleTimes)
+{
+  bool passed = true;
+  base::task<int> t{[] { return 42; }};
+  auto handle = t.get_handle();
+  t();
+  static_cast<void>(handle.get());
+  try
+  {
+    handle.get();
+  }
+  catch (const base::task_error& e)
+  {
+    const base::task_error_code* code =
+      boost::get_error_info<base::task_error_info>(e);
+    if (code && (base::task_error_code::no_state == *code))
+      passed = true;
+  }
+  BOOST_CHECK_EQUAL(passed, true);
+}
+
 BOOST_AUTO_TEST_CASE(TCGetHandleMultipleException)
 {
   bool passed = false;
