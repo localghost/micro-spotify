@@ -19,7 +19,7 @@ public:
     void stop();
 
     template<typename R>
-    void queue_task(task<R> task_,
+    void queue_task(task<R>&& task_,
                     std::chrono::milliseconds delay = std::chrono::milliseconds{0})
     {
       assert(thread_.joinable());
@@ -32,6 +32,16 @@ private:
     std::thread thread_;
     message_loop loop_;
 };
+
+template<typename R>
+task_handle<R> queue_task_with_handle(thread& thread_,
+                                      task<R>&& task_,
+                                      std::chrono::milliseconds delay = std::chrono::milliseconds{0})
+{
+  auto result = task_.get_handle();
+  thread_.queue_task(std::move(task_));
+  return result;
+}
 }
 
 #endif
