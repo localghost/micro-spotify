@@ -31,6 +31,8 @@ private:
                               const void* frames,
                               int num_frames);
 
+    void create_session();
+
     sp_session* session_;
     base::thread thread_;
 

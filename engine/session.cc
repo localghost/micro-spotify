@@ -50,12 +50,14 @@ session::session(configuration& config)
   static sp_session_callbacks callbacks;
   callbacks.logged_in = &logged_in;
   callbacks.music_delivery = &music_delivery;
+  callbacks.notify_main_thread = &notify_main_thread;
   sp_config.callbacks = &callbacks;
 //  ...;
-  thread_.start();
   // setup callbacks
 
-  thread_.queue_task(base::task{[this, sp_config]() { sp_session_create(&sp_config, &session_); }});
+  base::queue_task_with_handle(spotify_thread(),
+                               base::make_task(&session::create_session, this)).get();
+  spotify_thread().queue_task(base::task{[session_]{ process_events(); }});
 //  sp_error error = sp_session_create(&config, &session_);
 //  if (SP_ERROR_OK != error)
 //    THROW(EXCEPTION(spotify_error) << error_info::sp_error{error});
@@ -63,8 +65,13 @@ session::session(configuration& config)
 
 session::~session()
 {
-  thread_.queue_task(base::task{[this]() { sp_session_release(session_); }});
-  thread_.stop();
+  // FIXME clean up and shutdown everything nicely
+
+  // assuming for now that there is only one session object and when it is destroyed
+  // then it is as if the application was being shutdown and it is ok to clean
+  // the queue of the spotify thread
+  base::queue_task_with_handle(spotify_thread(),
+                               base::make_task(&sp_session_release, session_)).get();
 }
 
 void session::log_in()
@@ -91,5 +98,35 @@ void session::logged_in(sp_session* session_, sp_error error)
   session* self = static_cast<session*>(sp_session_userdata(session_));
   assert(self);
   self->on_logged_in(error);
+}
+
+void session::notify_main_thread()
+{
+  session* self = nullptr;
+  spotify_thread().queue_task(base::make_task([]
+        {
+          try
+          {
+            // this should always succeed (except when processing events has not been yet)
+            // as task is executed on the same thread as this code
+            process_events_handle.cancel();
+            process_events();
+          }
+          catch (base::task_error)
+          {
+            LOG_ERROR << "notify_main_thread() called before events processing started!\n"
+                      << boost::current_exception_diagnostic_information();
+            // assuming processing events will be started sooner or later
+            int timeout = 0;
+            sp_session_process_events(session_, &timeout);
+          }
+        });
+}
+
+void session::process_events()
+{
+  int timeout = 0;
+  sp_session_process_events(session_, &timeout);
+  process_events_handle = base::queue_task_with_handle(spotify_thread(), base::make_task(&session::process_events, session_), std::chrono::milliseconds{timeout});
 }
 }
