@@ -4,9 +4,13 @@
 #include <boost/signals2.hpp>
 #include <libspotify/api.h>
 #include <base/thread.h>
+#include <base/exception.h>
 #include <engine/configuration.h>
 
 namespace engine {
+typedef boost::error_info<struct spotify_error_info_t, sp_error> spotify_error_info;
+EXCEPTION_TYPE(spotify_error);
+
 class session FINAL
 {
     typedef boost::signals2::signal<void(sp_error)> logged_in_signal_type;
@@ -35,12 +39,13 @@ private:
     static void notify_main_thread(sp_session* session_);
 
     void create_session();
+    void process_events();
 
     static const sp_session_callbacks session_callbacks_;
+    base::task_handle<void> process_events_handle_;
 
     sp_session* session_;
     sp_session_config session_config_;
-    base::thread thread_;
 
     logged_in_signal_type on_logged_in;
     frames_delivered_signal_type on_frames_delivered;
