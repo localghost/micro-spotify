@@ -39,7 +39,7 @@ task_handle<R> queue_task_with_handle(thread& thread_,
                                       std::chrono::milliseconds delay = std::chrono::milliseconds{0})
 {
   auto result = task_.get_handle();
-  thread_.queue_task(std::move(task_));
+  thread_.queue_task(std::move(task_), delay);
   return result;
 }
 }
