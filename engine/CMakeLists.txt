@@ -8,7 +8,7 @@ include_directories(${libspotify_INCLUDE_DIRS})
 
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 
-include_directories(${Boost_INCLUDE_DIRS})
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 set(HDRS
@@ -19,7 +19,7 @@ set(HDRS
    )
 
 set(SRCS
-#    session.cc
+    session.cc
     global_thread_manager.cc
    )
 
