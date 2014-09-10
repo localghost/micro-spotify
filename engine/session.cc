@@ -35,32 +35,24 @@ const char username[] = "";
 const char password[] = "";
 }
 
+sp_session_callback session::session_callbacks_ = session::initialize_session_callbacks();
+
 session::session(configuration& config)
 {
   // setup configuration
 //  std::string cache_location = config.cache.value();
 
-  sp_session_config sp_config;
-  sp_config.api_version = SPOTIFY_API_VERSION;
-  sp_config.userdata = this;
+  session_config.api_version = SPOTIFY_API_VERSION;
+  session_config.userdata = this;
   // FIXME duplicate configuration string since they may change
   //       by external source
-  sp_config.cache_location = "/tmp";//cache_location.c_str();
-  sp_config.application_key = application_key;
-  static sp_session_callbacks callbacks;
-  callbacks.logged_in = &logged_in;
-  callbacks.music_delivery = &music_delivery;
-  callbacks.notify_main_thread = &notify_main_thread;
-  sp_config.callbacks = &callbacks;
-//  ...;
-  // setup callbacks
+  session_config.cache_location = "/tmp";//cache_location.c_str();
+  session_config.application_key = application_key;
+  session_config.callbacks = &session_callbacks_;
 
   base::queue_task_with_handle(spotify_thread(),
                                base::make_task(&session::create_session, this)).get();
-  spotify_thread().queue_task(base::task{[session_]{ process_events(); }});
-//  sp_error error = sp_session_create(&config, &session_);
-//  if (SP_ERROR_OK != error)
-//    THROW(EXCEPTION(spotify_error) << error_info::sp_error{error});
+  spotify_thread().queue_task(base::make_task(&session::process_events, this));
 }
 
 session::~session()
@@ -76,11 +68,12 @@ session::~session()
 
 void session::log_in()
 {
-  thread_.queue_task(base::task{[this]() { sp_session_login(session_,
-                                                      username,
-                                                      password,
-                                                      false,
-                                                      NULL); }});
+  spotify_thread().queue_task(base::make_task(&sp_session_login,
+                                              session_,
+                                              username,
+                                              password,
+                                              false,
+                                              NULL));
 }
 
 signals::connection session::connect_logged_in(const logged_in_slot_type& slot)
@@ -100,9 +93,10 @@ void session::logged_in(sp_session* session_, sp_error error)
   self->on_logged_in(error);
 }
 
-void session::notify_main_thread()
+void session::notify_main_thread(sp_session* session_)
 {
-  session* self = nullptr;
+  assert(session_);
+  session* self = static_cast<session*>(sp_session_userdata(session_));
   spotify_thread().queue_task(base::make_task([]
         {
           try
@@ -128,5 +122,21 @@ void session::process_events()
   int timeout = 0;
   sp_session_process_events(session_, &timeout);
   process_events_handle = base::queue_task_with_handle(spotify_thread(), base::make_task(&session::process_events, session_), std::chrono::milliseconds{timeout});
+}
+
+void session::create_session()
+{
+  sp_error error = sp_session_create(&session_config, &session_);
+  if (SP_ERROR_OK != error)
+    THROW(EXCEPTION(spotify_error) << error_info::sp_error{error});
+}
+
+sp_session_callbacks session::initialize_session_callbacks()
+{
+  sp_session_callbacks result;
+  result.logged_in = &logged_in;
+  result.notify_main_thread = &notify_main_thread;
+  result.music_delivery = &music_delivery;
+  return result;
 }
 }

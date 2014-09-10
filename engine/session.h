@@ -25,15 +25,21 @@ public:
     boost::signals2::connection connect_frames_delivered(const frames_delivered_slot_type& slot);
 
 private:
+    static sp_session_callbacks initialize_session_callbacks();
+
     static void logged_in(sp_session* session, sp_error error);
     static int music_delivery(sp_session* session_,
                               const sp_audioformat* format,
                               const void* frames,
                               int num_frames);
+    static void notify_main_thread(sp_session* session_);
 
     void create_session();
 
+    static const sp_session_callbacks session_callbacks_;
+
     sp_session* session_;
+    sp_session_config session_config_;
     base::thread thread_;
 
     logged_in_signal_type on_logged_in;
