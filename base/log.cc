@@ -1,5 +1,6 @@
 #include "log.h"
 
+#include <mutex>
 #include <iostream>
 
 namespace base {
@@ -41,6 +42,8 @@ std::ostream& message::stream()
 
 message::~message()
 {
+  static std::mutex m;
+  std::lock_guard<std::mutex> guard{m};
     // TODO check if operator<<() does not throw
     // FIXME lock for thread-safety
     std::cout << oss.str() << std::endl;
