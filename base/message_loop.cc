@@ -21,11 +21,22 @@ void message_loop::stop()
 //
 //  active_ = false;
 
-  queue_task(make_task([this]() { active_ = false; }));
+  queue_task(make_task([this]
+        {
+          {
+            std::lock_guard<std::mutex> guard{mutex_};
+            queue_.clear();
+          }
+          active_ = false;
+        }));
 }
 
+// FIXME Consider running a task directly if it was added on the same thread
+//       on which message_loop is spinning and it has no delay
 void message_loop::queue_task_(std::unique_ptr<task_model_base>&& task_, std::chrono::milliseconds delay)
 {
+  if (!active_) return;
+
   // FIXME see https://github.com/localghost/micro-spotify/wiki/Architecture:-MessageLoop#adding-task-to-not-running-message-loop 
   bool notify_waiter = false;
   {

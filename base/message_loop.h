@@ -68,7 +68,7 @@ private:
   void queue_task_(std::unique_ptr<task_model_base>&& t,
                    std::chrono::milliseconds delay);
 
-  bool active_ = false;
+  std::atomic<bool> active_{false};
 
   // TODO Rewrite to use lock-free priority queue
   std::vector<queued_task> queue_;
