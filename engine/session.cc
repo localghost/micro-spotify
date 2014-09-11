@@ -4,6 +4,7 @@
 
 #include <base/task.h>
 #include <base/log.h>
+#include <base/assert.h>
 
 #include "global_thread_manager.h"
 
@@ -118,7 +119,7 @@ int session::music_delivery(sp_session* /*session_*/,
 
 void session::process_events()
 {
-  assert(base::thread::current()->id() == spotify_thread().id());
+  ASSERT_EQ(base::thread::current()->id(), spotify_thread().id());
   int timeout = 0;
   sp_session_process_events(session_, &timeout);
   process_events_handle_
@@ -129,7 +130,7 @@ void session::process_events()
 
 void session::create_session()
 {
-  assert(base::thread::current()->id() == spotify_thread().id());
+  ASSERT_EQ(base::thread::current()->id(), spotify_thread().id());
   sp_error error = sp_session_create(&session_config_, &session_);
   if (SP_ERROR_OK != error)
     THROW(spotify_error{} << spotify_error_info{error});
@@ -137,7 +138,7 @@ void session::create_session()
 
 void session::notify_main_thread()
 {
-  assert(base::thread::current()->id() == spotify_thread().id());
+  ASSERT_EQ(base::thread::current()->id(), spotify_thread().id());
   try
   {
     // this should always succeed (except when processing events has not been yet)
