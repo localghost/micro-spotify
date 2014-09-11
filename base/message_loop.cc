@@ -4,6 +4,7 @@
 #include <boost/exception/all.hpp>
 
 #include "log.h"
+#include "thread.h"
 
 namespace base {
 void message_loop::start()
@@ -32,10 +33,14 @@ void message_loop::stop()
 }
 
 // FIXME Consider running a task directly if it was added on the same thread
-//       on which message_loop is spinning and it has no delay
+//       on which message_loop is spinning and it has no delay; use case: 
+//       task is pushed on a loop and get() on its handle is called, in such
+//       case application blocks
 void message_loop::queue_task_(std::unique_ptr<task_model_base>&& task_, std::chrono::milliseconds delay)
 {
-  if (!active_) return;
+//  if (!active_) return;
+//  LOG_DEBUG << "pushing a task on a thread: " << base::thread::current()->id();
+  LOG_DEBUG << "pushing a task on a thread";
 
   // FIXME see https://github.com/localghost/micro-spotify/wiki/Architecture:-MessageLoop#adding-task-to-not-running-message-loop 
   bool notify_waiter = false;
