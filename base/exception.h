@@ -22,7 +22,7 @@ void verbose_terminate_handler();
 }
 
 #define EXCEPTION_TYPE(ClassName) \
-        struct ClassName : virtual ::base::exception { }
+        struct ClassName : ::base::exception { }
 
 // deprecated: use THROW instead
 //#define EXCEPTION(ClassName) \
