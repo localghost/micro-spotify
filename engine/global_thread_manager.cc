@@ -1,5 +1,6 @@
 #include "global_thread_manager.h"
 
+#include <base/log.h>
 #include <cassert>
 
 namespace engine {
@@ -19,6 +20,7 @@ inline std::size_t global_thread_manager::thread_index(global_thread_id id)
 
 global_thread_manager::global_thread_manager()
 {
+  LOG_DEBUG << "global_thread_manager starting up...";
   // FIXME What if some code in main_thread queues a task to a spotify_thread
   //       before it is started? Currently, an assert will be thrown so either
   //       this piece of code or base::thread::start() requires redesign
