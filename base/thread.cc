@@ -2,6 +2,7 @@
 
 #include <cassert>
 
+#include "log.h"
 #include "compatibility.h"
 
 namespace base {
@@ -25,6 +26,8 @@ void thread::start()
   if (thread_.joinable()) return;
 
   thread_ = std::thread{&thread::exec, this};
+
+  waiter_.wait();
 }
 
 void thread::stop()
@@ -42,7 +45,9 @@ std::thread::id thread::id() const
 
 void thread::exec()
 {
+  LOG_DEBUG << "Thread " << id();
   current_thread = this;
+  waiter_.signal();
   loop_.start();
 }
 }

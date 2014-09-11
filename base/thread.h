@@ -6,6 +6,7 @@
 #include <functional>
 #include <base/task.h>
 #include <base/message_loop.h>
+#include <base/waitable_event.h>
 
 namespace base {
 class thread FINAL
@@ -37,6 +38,7 @@ private:
 
     std::thread thread_;
     message_loop loop_;
+    waitable_event waiter_;
 };
 
 template<typename R>
