@@ -35,6 +35,11 @@ void thread::stop()
   thread_.join();
 }
 
+std::thread::id thread::id() const
+{
+  return thread_.get_id();
+}
+
 void thread::exec()
 {
   current_thread = this;
