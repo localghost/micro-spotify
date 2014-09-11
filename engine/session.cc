@@ -36,11 +36,12 @@ const std::uint8_t application_key[] = {
 };
 const char username[] = "";
 const char password[] = "";
+const char application_name[] = "micro-spotify";
 }
 
 const sp_session_callbacks session::session_callbacks_ = session::initialize_session_callbacks();
 
-session::session(configuration& config)
+session::session(configuration& config) : session_config_{}
 {
   // setup configuration
 //  std::string cache_location = config.cache.value();
@@ -50,7 +51,10 @@ session::session(configuration& config)
   // FIXME duplicate configuration string since they may change
   //       by external source
   session_config_.cache_location = "/tmp";//cache_location.c_str();
+  session_config_.settings_location = "/tmp";
   session_config_.application_key = application_key;
+  session_config_.application_key_size = sizeof(application_key);
+  session_config_.user_agent = application_name;
   session_config_.callbacks = &session_callbacks_;
 
   base::queue_task_with_handle(spotify_thread(),
