@@ -100,24 +100,8 @@ void session::notify_main_thread(sp_session* session_)
 {
   assert(session_);
   session* self = static_cast<session*>(sp_session_userdata(session_));
-  spotify_thread().queue_task(base::make_task([self]
-        {
-          try
-          {
-            // this should always succeed (except when processing events has not been yet)
-            // as task is executed on the same thread as this code
-            self->process_events_handle_.cancel();
-            self->process_events();
-          }
-          catch (base::task_error)
-          {
-            LOG_ERROR << "notify_main_thread() called before events processing started!\n"
-                      << boost::current_exception_diagnostic_information();
-            // assuming processing events will be started sooner or later
-            int timeout = 0;
-            sp_session_process_events(self->session_, &timeout);
-          }
-        }));
+  spotify_thread().queue_task(
+      base::make_task(static_cast<void(session::*)()>(&session::notify_main_thread), self));
 }
 
 int session::music_delivery(sp_session* /*session_*/,
@@ -130,17 +114,41 @@ int session::music_delivery(sp_session* /*session_*/,
 
 void session::process_events()
 {
+  assert(base::thread::current()->id() == spotify_thread().id());
   int timeout = 0;
   sp_session_process_events(session_, &timeout);
   process_events_handle_
-      = base::queue_task_with_handle(spotify_thread(), base::make_task(&session::process_events, this), std::chrono::milliseconds{timeout});
+      = base::queue_task_with_handle(spotify_thread(),
+                                     base::make_task(&session::process_events, this),
+                                     std::chrono::milliseconds{timeout});
 }
 
 void session::create_session()
 {
+  assert(base::thread::current()->id() == spotify_thread().id());
   sp_error error = sp_session_create(&session_config_, &session_);
   if (SP_ERROR_OK != error)
     THROW(spotify_error{} << spotify_error_info{error});
+}
+
+void session::notify_main_thread()
+{
+  assert(base::thread::current()->id() == spotify_thread().id());
+  try
+  {
+    // this should always succeed (except when processing events has not been yet)
+    // as task is executed on the same thread as this code
+    process_events_handle_.cancel();
+    process_events();
+  }
+  catch (base::task_error)
+  {
+    LOG_ERROR << "notify_main_thread() called before events processing started!\n"
+      << boost::current_exception_diagnostic_information();
+    // assuming processing events will be started sooner or later
+    int timeout = 0;
+    sp_session_process_events(session_, &timeout);
+  }
 }
 
 sp_session_callbacks session::initialize_session_callbacks()

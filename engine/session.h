@@ -40,6 +40,7 @@ private:
 
     void create_session();
     void process_events();
+    void notify_main_thread();
 
     static const sp_session_callbacks session_callbacks_;
     base::task_handle<void> process_events_handle_;
