@@ -18,7 +18,7 @@ BOOST_AUTO_TEST_CASE(TCEngineSession)
   }
   catch (base::exception)
   {
-    succcess = false;
+    success = false;
     message = boost::current_exception_diagnostic_information();
   }
 
