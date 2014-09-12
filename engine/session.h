@@ -14,10 +14,12 @@ EXCEPTION_TYPE(spotify_error);
 class session FINAL
 {
     typedef boost::signals2::signal<void(sp_error)> logged_in_signal_type;
+    typedef boost::signals2::signal<void()> logged_out_signal_type;
     typedef boost::signals2::signal<void(sp_error)> frames_delivered_signal_type;
 
 public:
     typedef logged_in_signal_type::slot_type logged_in_slot_type;
+    typedef logged_out_signal_type::slot_type logged_out_slot_type;
     typedef frames_delivered_signal_type::slot_type frames_delivered_slot_type;
 
     explicit session(configuration& config);
@@ -26,12 +28,15 @@ public:
     void log_in();
 
     boost::signals2::connection connect_logged_in(const logged_in_slot_type& slot);
+    boost::signals2::connection connect_logged_out(const logged_out_slot_type& slot);
     boost::signals2::connection connect_frames_delivered(const frames_delivered_slot_type& slot);
 
 private:
     static sp_session_callbacks initialize_session_callbacks();
 
-    static void logged_in(sp_session* session, sp_error error);
+    static void log_message(sp_session* session_, const char* message);
+    static void logged_in(sp_session* session_, sp_error error);
+    static void logged_out(sp_session* session_);
     static int music_delivery(sp_session* session_,
                               const sp_audioformat* format,
                               const void* frames,
@@ -49,6 +54,7 @@ private:
     sp_session_config session_config_;
 
     logged_in_signal_type on_logged_in;
+    logged_out_signal_type on_logged_out;
     frames_delivered_signal_type on_frames_delivered;
 };
 }

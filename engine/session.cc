@@ -98,9 +98,19 @@ signals::connection session::connect_logged_in(const logged_in_slot_type& slot)
   return on_logged_in.connect(slot);
 }
 
+signals::connection session::connect_logged_out(const logged_out_slot_type& slot)
+{
+  return on_logged_out.connect(slot);
+}
+
 signals::connection session::connect_frames_delivered(const frames_delivered_slot_type& slot)
 {
   return on_frames_delivered.connect(slot);
+}
+
+void session::log_message(sp_session* session_, const char* message)
+{
+  LOG_DEBUG << "Message from spotify for [" << session_ << "] " << message;
 }
 
 void session::logged_in(sp_session* session_, sp_error error)
@@ -108,6 +118,13 @@ void session::logged_in(sp_session* session_, sp_error error)
   session* self = static_cast<session*>(sp_session_userdata(session_));
   assert(self);
   self->on_logged_in(error);
+}
+
+void session::logged_out(sp_session* session_)
+{
+  session* self = static_cast<session*>(sp_session_userdata(session_));
+  assert(self);
+  self->on_logged_out();
 }
 
 void session::notify_main_thread(sp_session* session_)
@@ -169,6 +186,8 @@ sp_session_callbacks session::initialize_session_callbacks()
 {
   sp_session_callbacks result;
   result.logged_in = &logged_in;
+  result.logged_out = &logged_out;
+  result.log_message = &log_message;
   result.notify_main_thread = &notify_main_thread;
   result.music_delivery = &music_delivery;
   return result;
