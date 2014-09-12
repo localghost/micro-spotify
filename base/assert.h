@@ -3,8 +3,4 @@
 
 #include <boost/assert.hpp>
 
-#undef ASSERT_EQ
-#define ASSERT_EQ(value, expected) \
-  BOOST_ASSERT((value) == (expected))
-
 #endif
