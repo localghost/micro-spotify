@@ -9,7 +9,7 @@
 #include <base/waitable_event.h>
 
 namespace base {
-class thread FINAL
+class thread
 {
 public:
     static thread* current();

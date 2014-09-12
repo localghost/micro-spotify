@@ -8,6 +8,18 @@
 namespace base {
 namespace {
 THREAD_LOCAL thread* current_thread = nullptr;
+
+// FIXME Only o mock up for the main thread
+class main_thread : public base::thread
+{
+public:
+  main_thread() { current_thread = this; }
+  void start() { }
+  void stop() { }
+private:
+  static main_thread thread_;
+};
+main_thread main_thread::thread_;
 }
 
 thread* thread::current()
