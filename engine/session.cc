@@ -1,6 +1,7 @@
 #include "session.h"
 
 #include <cstdint>
+#include <cstring>
 
 #include <base/task.h>
 #include <base/log.h>
@@ -42,11 +43,14 @@ const char application_name[] = "micro-spotify";
 
 const sp_session_callbacks session::session_callbacks_ = session::initialize_session_callbacks();
 
-session::session(configuration& config) : session_config_{}
+session::session(configuration& /*config*/)
 {
+  BOOST_ASSERT_MSG(base::thread::current()->id() != spotify_thread().id(),
+                   "Session object MUST NOT be created on spotify thread");
   // setup configuration
 //  std::string cache_location = config.cache.value();
 
+  std::memset(&session_config_, 0, sizeof(session_config_));
   session_config_.api_version = SPOTIFY_API_VERSION;
   session_config_.userdata = this;
   // FIXME duplicate configuration string since they may change
@@ -70,6 +74,11 @@ session::~session()
   // assuming for now that there is only one session object and when it is destroyed
   // then it is as if the application was being shutdown and it is ok to clean
   // the queue of the spotify thread
+
+  if (process_events_handle_.is_valid() && !process_events_handle_.cancel())
+    base::queue_task_with_handle(spotify_thread(),
+                                 base::make_task([this]{ process_events_handle_.cancel(); })).get();
+
   base::queue_task_with_handle(spotify_thread(),
                                base::make_task(&sp_session_release, session_)).get();
 }
@@ -119,7 +128,7 @@ int session::music_delivery(sp_session* /*session_*/,
 
 void session::process_events()
 {
-  ASSERT_EQ(base::thread::current()->id(), spotify_thread().id());
+  BOOST_ASSERT(base::thread::current()->id() == spotify_thread().id());
   int timeout = 0;
   sp_session_process_events(session_, &timeout);
   process_events_handle_
@@ -130,7 +139,7 @@ void session::process_events()
 
 void session::create_session()
 {
-  ASSERT_EQ(base::thread::current()->id(), spotify_thread().id());
+  BOOST_ASSERT(base::thread::current()->id() == spotify_thread().id());
   sp_error error = sp_session_create(&session_config_, &session_);
   if (SP_ERROR_OK != error)
     THROW(spotify_error{} << spotify_error_info{error});
@@ -138,7 +147,7 @@ void session::create_session()
 
 void session::notify_main_thread()
 {
-  ASSERT_EQ(base::thread::current()->id(), spotify_thread().id());
+  BOOST_ASSERT(base::thread::current()->id() == spotify_thread().id());
   try
   {
     // this should always succeed (except when processing events has not been yet)
