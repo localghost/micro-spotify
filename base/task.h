@@ -133,6 +133,8 @@ public:
   void operator=(const task_handle&) = delete;
   task_handle& operator=(task_handle&&) = default;
 
+  // TODO Is there a way to mitigate deadlock that occrs when a task is
+  //      enqueued on current thread and get() on its handle is called?
   result_type get()
   {
     wait();
@@ -157,6 +159,9 @@ public:
     state_->wait();
   }
 
+  /// Cancels the task
+  /// @return Whether cancellation succeeded or not
+  /// @throw base::task_error base::task_error_code::no_state
   bool cancel()
   {
     if (!state_)
@@ -165,6 +170,8 @@ public:
     return state_->cancel();
   }
 
+  /// Checks whether task has associated shared state with it
+  /// @return True if task has associated shared state, false otherwise
   bool is_valid() const
   {
     return bool(state_);
