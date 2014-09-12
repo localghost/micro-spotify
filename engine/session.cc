@@ -93,6 +93,11 @@ void session::log_in()
                                               nullptr));
 }
 
+void session::log_out()
+{
+  spotify_thread().queue_task(base::make_task(&sp_session_logout, session_));
+}
+
 signals::connection session::connect_logged_in(const logged_in_slot_type& slot)
 {
   return on_logged_in.connect(slot);

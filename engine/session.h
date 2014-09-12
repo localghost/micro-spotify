@@ -26,6 +26,7 @@ public:
     ~session();
 
     void log_in();
+    void log_out();
 
     boost::signals2::connection connect_logged_in(const logged_in_slot_type& slot);
     boost::signals2::connection connect_logged_out(const logged_out_slot_type& slot);
