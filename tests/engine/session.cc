@@ -10,6 +10,7 @@
 
 BOOST_AUTO_TEST_SUITE(TSEngineSession)
 
+// Tests whether engine::session object can be created.
 BOOST_AUTO_TEST_CASE(TCEngineSessionCreate)
 {
   bool success = true;
@@ -29,6 +30,8 @@ BOOST_AUTO_TEST_CASE(TCEngineSessionCreate)
   BOOST_CHECK_MESSAGE(success, message);
 }
 
+// Checks whether it is possible to log in into spotify via
+// engine::session API.
 BOOST_AUTO_TEST_CASE(TCEngineSessionLogIn)
 {
   bool success = false;
