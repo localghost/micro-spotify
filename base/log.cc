@@ -1,5 +1,6 @@
 #include "log.h"
 
+#include <cstdio>
 #include <mutex>
 #include <iostream>
 
@@ -42,11 +43,17 @@ std::ostream& message::stream()
 
 message::~message()
 {
-  static std::mutex m;
-  std::lock_guard<std::mutex> guard{m};
-  // TODO check if operator<<() does not throw
-  // FIXME lock for thread-safety
-  std::cout << oss.str() << std::endl;
+  try
+  {
+    // reasoning for std::cerr:
+    // - unbuffered by default on Linux
+    // - there might be a terminal-based client
+    std::cerr << oss.str() << std::endl;
+  }
+  catch (...)
+  {
+    std::fprintf(stderr, "%s:%d %s", __FILE__, __LINE__, __FUNCTION__);
+  }
 }
 }
 }
