@@ -50,6 +50,7 @@ private:
 
     static const sp_session_callbacks session_callbacks_;
     base::task_handle<void> process_events_handle_;
+    base::task_handle<void> notify_main_thread_handle_;
 
     sp_session* session_;
     sp_session_config session_config_;
