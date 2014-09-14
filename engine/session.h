@@ -28,6 +28,10 @@ public:
     void log_in();
     void log_out();
 
+//    playlist_container get_playlist_container();
+//    player get_player();
+//    void search(search_query query);
+
     boost::signals2::connection connect_logged_in(const logged_in_slot_type& slot);
     boost::signals2::connection connect_logged_out(const logged_out_slot_type& slot);
     boost::signals2::connection connect_frames_delivered(const frames_delivered_slot_type& slot);
