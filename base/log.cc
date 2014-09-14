@@ -4,6 +4,9 @@
 #include <mutex>
 #include <iostream>
 
+#include "thread.h"
+#include "chrono.h"
+
 namespace base {
 namespace log {
 namespace {
@@ -29,6 +32,9 @@ message::message(severity severity_,
 {
   oss << "["
     << severity_to_string(severity_) << ":"
+    // TODO add thread's id
+//    << thread::current()->id() << ":"
+    << high_steady_clock::now().time_since_epoch().count() << "|"
     // FIXME cut down the file to relative path
     << file << ":"
     << line << ":"
@@ -43,8 +49,10 @@ std::ostream& message::stream()
 
 message::~message()
 {
+  static std::mutex m;
   try
   {
+    std::lock_guard<std::mutex> guard{m};
     // reasoning for std::cerr:
     // - unbuffered by default on Linux
     // - there might be a terminal-based client
