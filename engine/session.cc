@@ -64,7 +64,15 @@ session::session(configuration& /*config*/)
 
   base::queue_task_with_handle(spotify_thread(),
                                base::make_task(&session::create_session, this)).get();
-  spotify_thread().queue_task(base::make_task(&session::process_events, this));
+  // process_events_handle_ can't be assigned directly on any thread but spotify_thread
+  // since it is referenced in notify_main_thread which can be called first
+  auto t = base::make_task([this]
+      { 
+        process_events_handle_ = base::queue_task_with_handle(
+          spotify_thread(), base::make_task(&session::process_events, this));
+      }
+  );
+  spotify_thread().queue_task(std::move(t));
 }
 
 session::~session()
@@ -75,12 +83,30 @@ session::~session()
   // then it is as if the application was being shutdown and it is ok to clean
   // the queue of the spotify thread
 
-  if (process_events_handle_.is_valid() && !process_events_handle_.cancel())
-    base::queue_task_with_handle(spotify_thread(),
-                                 base::make_task([this]{ process_events_handle_.cancel(); })).get();
+  // posting the cancellation of the process_events to spotify_thread so that it
+  // won't be called in the middle of process_events making it useless
+  base::queue_task_with_handle(spotify_thread(),
+                               base::make_task([this]
+                                 { 
+                                   if (process_events_handle_.is_valid())
+                                      process_events_handle_.cancel();
+                                 }
+                               )).get();
 
   base::queue_task_with_handle(spotify_thread(),
                                base::make_task(&sp_session_release, session_)).get();
+
+  // assuming that after sp_session_release() notify_main_thread callback will not be called
+  // so it is safe to use the handle; posting cancellation to the spotify_thread for the same
+  // reasons as in case of process_events_handle_ ... but is it true? (maybe notify_main_thread
+  // increases reference counter and sp_session_release() does not destroy the session at all)
+  base::queue_task_with_handle(spotify_thread(),
+                               base::make_task([this]
+                                 {
+                                   if (notify_main_thread_handle_.is_valid())
+                                     notify_main_thread_handle_.cancel();
+                                 }
+                               )).get();
 }
 
 void session::log_in()
@@ -97,6 +123,17 @@ void session::log_out()
 {
   spotify_thread().queue_task(base::make_task(&sp_session_logout, session_));
 }
+
+//playlist_container session::get_playlist_container()
+//{
+//  sp_session_playlistcontainer* container =
+//      base::queue_task_with_handle(spotify_thread(),
+//                                   base::make_task(&sp_session_playlistcontainer, session_)).get();
+//  if (!container)
+//    THROW(spotify_error{}); // inject error code
+//
+//  return playlist_container{container};
+//}
 
 signals::connection session::connect_logged_in(const logged_in_slot_type& slot)
 {
@@ -136,7 +173,7 @@ void session::notify_main_thread(sp_session* session_)
 {
   assert(session_);
   session* self = static_cast<session*>(sp_session_userdata(session_));
-  spotify_thread().queue_task(
+  self->notify_main_thread_handle_ = base::queue_task_with_handle(spotify_thread(),
       base::make_task(static_cast<void(session::*)()>(&session::notify_main_thread), self));
 }
 
@@ -170,18 +207,22 @@ void session::create_session()
 void session::notify_main_thread()
 {
   BOOST_ASSERT(base::thread::current()->id() == spotify_thread().id());
-  try
+
+  // if it is not valid then it means that process_events has not been
+  // started yet
+  if (process_events_handle_.is_valid())
   {
-    // this should always succeed (except when processing events has not been yet)
-    // as task is executed on the same thread as this code
-    process_events_handle_.cancel();
-    process_events();
+    // if cancel() returns false it means (since we are on the same thread as
+    // process_events()) that cancel() has already been called which could have
+    // happen only from within ~session()
+    if (process_events_handle_.cancel())
+      process_events();
   }
-  catch (base::task_error)
+  else
   {
-    LOG_ERROR << "notify_main_thread() called before events processing started!\n"
-      << boost::current_exception_diagnostic_information();
-    // assuming processing events will be started sooner or later
+    LOG_DEBUG << "notify_main_thread() called before events processing started";
+    // making a one time call to sp_session_process_events since
+    // (hopefully) processing events will be started sooner or later
     int timeout = 0;
     sp_session_process_events(session_, &timeout);
   }
