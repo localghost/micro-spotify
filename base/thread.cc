@@ -57,7 +57,6 @@ std::thread::id thread::id() const
 
 void thread::exec()
 {
-  LOG_DEBUG << "Thread " << id();
   current_thread = this;
   waiter_.signal();
   loop_.start();
