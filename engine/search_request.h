@@ -1,13 +1,15 @@
-#ifndef ENGINE_SEARCH_H
-#define ENGINE_SEARCH_H
+#ifndef ENGINE_SEARCH_REQUEST_H
+#define ENGINE_SEARCH_REQUEST_H
 
 #include <string>
 #include <boost/signals2.hpp>
 
+#include <engine/search_response.h>
+
 namespace engine {
-struct search_query
+struct search_request
 {
-  typedef boost::signals2::signal<void(search_result)> search_completed_signal_type;
+  typedef boost::signals2::signal<void(search_response)> search_completed_signal_type;
 
   std::string query;
   

@@ -1,11 +1,15 @@
 #ifndef ENGINE_SESSION_H
 #define ENGINE_SESSION_H
 
+#include <cstdint>
+#include <map>
+#include <mutex>
 #include <boost/signals2.hpp>
 #include <libspotify/api.h>
 #include <base/thread.h>
 #include <base/exception.h>
 #include <engine/configuration.h>
+#include <engine/search_request.h>
 
 namespace engine {
 typedef boost::error_info<struct spotify_error_info_t, sp_error> spotify_error_info;
@@ -30,7 +34,7 @@ public:
 
 //    playlist_container get_playlist_container();
 //    player get_player();
-//    void search(search_query query);
+    void search(search_request request);
 
     boost::signals2::connection connect_logged_in(const logged_in_slot_type& slot);
     boost::signals2::connection connect_logged_out(const logged_out_slot_type& slot);
@@ -47,6 +51,7 @@ private:
                               const void* frames,
                               int num_frames);
     static void notify_main_thread(sp_session* session_);
+    static void search_completed(sp_search* result, void* data);
 
     void create_session();
     void process_events();
@@ -62,6 +67,9 @@ private:
     logged_in_signal_type on_logged_in;
     logged_out_signal_type on_logged_out;
     frames_delivered_signal_type on_frames_delivered;
+
+    std::map<sp_search*, search_request> search_requests;
+    std::mutex search_mutex;
 };
 }
 

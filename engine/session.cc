@@ -3,11 +3,15 @@
 #include <cstdint>
 #include <cstring>
 
+#include <utility>
+
 #include <base/task.h>
 #include <base/log.h>
 #include <base/assert.h>
 
 #include "global_thread_manager.h"
+#include "search_response.h"
+#include "search_response_impl.h"
 
 namespace signals = boost::signals2;
 
@@ -135,6 +139,35 @@ void session::log_out()
 //  return playlist_container{container};
 //}
 
+void session::search(search_request request)
+{
+
+  auto t = base::make_task([this, &request]
+      {
+        // only this assures that sp_search will be added to search_requests
+        // before its presence is checked in the search_completed callback
+        // without this search_completed could be processed before sp_search is
+        // added to search_requests
+        // FIXME This causes the lock to be held longer than necessary, mark
+        //       each request with an id and pass that id to callback; guard
+        //       only insert() and move insert() before sp_search_create()
+        std::lock_guard<std::mutex> guard{search_mutex};
+        sp_search* s = sp_search_create(session_, request.query.c_str(),
+                                        static_cast<int>(request.track_offset),
+                                        static_cast<int>(request.track_count),
+                                        static_cast<int>(request.album_offset),
+                                        static_cast<int>(request.album_count),
+                                        static_cast<int>(request.artist_offset),
+                                        static_cast<int>(request.artist_count),
+                                        static_cast<int>(request.playlist_offset),
+                                        static_cast<int>(request.playlist_count),
+                                        SP_SEARCH_STANDARD, &session::search_completed, this);
+        search_requests.insert(std::make_pair(s, std::move(request)));
+
+      });
+  spotify_thread().queue_task(std::move(t));
+}
+
 signals::connection session::connect_logged_in(const logged_in_slot_type& slot)
 {
   return on_logged_in.connect(slot);
@@ -183,6 +216,32 @@ int session::music_delivery(sp_session* /*session_*/,
                             int /*num_frames*/)
 {
   return 0;
+}
+
+void session::search_completed(sp_search* result, void* data)
+{
+  // TODO add synchronisation or go through a private thread
+  assert(data);
+  session* self = static_cast<session*>(data);
+
+  std::unique_ptr<search_response_impl> response;
+  {
+    std::lock_guard<std::mutex> guard{self->search_mutex};
+    auto request_it = self->search_requests.find(result);
+    if (self->search_requests.end() == request_it)
+    {
+      LOG_ERROR << "Search completed for an un-registered request";
+      sp_search_release(result);
+      return;
+    }
+
+    auto request = std::move(request_it->second);
+    response.reset(new search_response_impl{result});
+    self->search_requests.erase(request_it);
+  }
+
+  // TODO This should go through the task scheduler otherwise session is blocked
+  request.search_completed(search_response{response.get()});
 }
 
 void session::process_events()
