@@ -35,6 +35,9 @@ void verbose_terminate_handler();
 namespace base {
 /// Exception resulted from an I/O operation
 EXCEPTION_TYPE(io_error);
+
+/// Exception resoulted from referencing beyond a valid range
+EXCEPTION_TYPE(out_of_bounds_error);
 }
 
 #endif
