@@ -139,6 +139,11 @@ void session::log_out()
 //  return playlist_container{container};
 //}
 
+player session::get_player()
+{
+  return result{session_};
+}
+
 void session::search(search_request request)
 {
   auto t = base::make_task([this, &request]

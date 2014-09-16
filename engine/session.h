@@ -10,6 +10,7 @@
 #include <base/exception.h>
 #include <engine/configuration.h>
 #include <engine/search_request.h>
+#include <engine/player.h>
 
 namespace engine {
 typedef boost::error_info<struct spotify_error_info_t, sp_error> spotify_error_info;
@@ -33,7 +34,7 @@ public:
     void log_out();
 
 //    playlist_container get_playlist_container();
-//    player get_player();
+    player get_player();
     void search(search_request request);
 
     boost::signals2::connection connect_logged_in(const logged_in_slot_type& slot);
