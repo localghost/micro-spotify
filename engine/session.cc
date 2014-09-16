@@ -214,6 +214,7 @@ int session::music_delivery(sp_session* /*session_*/,
                             const void* /*frames*/,
                             int /*num_frames*/)
 {
+  LOG(DEBUG) << "here";
   return 0;
 }
 
