@@ -2,6 +2,7 @@
 #define ENGINGE_SEARCH_RESPONSE_H
 
 #include <memory>
+#include <libspotify/api.h>
 
 namespace engine {
 class search_response_impl;
@@ -13,20 +14,19 @@ public:
   std::string did_you_mean();
 
   size_t num_tracks();
-  /*track*/ void track(size_t num);
+  sp_track* track(size_t num);
   size_t total_tracks();
 
   size_t num_albums();
-  /*album*/ void album(size_t num);
+  sp_album* album(size_t num);
   size_t total_albums();
 
   size_t num_playlists();
-  /*playlist*/ void playlist(size_t num);
-  /* playlist related uri? */
+  sp_playlist* playlist(size_t num);
   size_t total_playlists();
 
   size_t num_artists();
-  /*artist*/ void artist(size_t num);
+  sp_artist* artist(size_t num);
   size_t total_artists();
 
 private:

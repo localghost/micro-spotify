@@ -37,14 +37,17 @@ size_t search_response_impl::num_tracks()
   return static_cast<size_t>(sp_search_num_tracks(search));
 }
 
-void search_response_impl::track(size_t num)
+sp_track* search_response_impl::track(size_t num)
 {
-  // FIXME call it on spotify_thread()
-  sp_track* result = sp_search_track(search, static_cast<int>(num));
-  // FIXME Can it happen only when num > sp_search_nm_tracks - 1?
-  if (!result)
-    THROW(base::out_of_bounds_error{});
-  // return track{result};
+  auto t = base::make_task([]
+      {
+        sp_track* result = sp_search_track(search, static_cast<int>(num));
+        // FIXME Can it happen only when num > sp_search_nm_tracks - 1?
+        if (!result)
+          THROW(base::out_of_bounds_error{});
+        return result;
+      });
+  return base::queue_task_with_handle(spotify_thread(), std::move(t)).get();
 }
 
 size_t search_response_impl::total_tracks()
@@ -59,7 +62,7 @@ size_t search_response_impl::num_albums()
   return 0;
 }
 
-void search_response_impl::album(size_t /*num*/) {}
+sp_album* search_response_impl::album(size_t /*num*/) {}
 
 size_t search_response_impl::total_albums()
 {
@@ -73,7 +76,7 @@ size_t search_response_impl::num_playlists()
   return 0;
 }
 
-void search_response_impl::playlist(size_t /*num*/) {}
+sp_playlist* search_response_impl::playlist(size_t /*num*/) {}
 
 size_t search_response_impl::total_playlists()
 {
@@ -87,7 +90,7 @@ size_t search_response_impl::num_artists()
   return 0;
 }
 
-void search_response_impl::artist(size_t /*num*/) {}
+sp_artist* search_response_impl::artist(size_t /*num*/) {}
 
 size_t search_response_impl::total_artists()
 {

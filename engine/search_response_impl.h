@@ -1,7 +1,7 @@
 #ifndef ENGINE_SEARCH_RESPONSE_IMPL_H
 #define ENGINE_SEARCH_RESPONSE_IMPL_H
 
-#include <engine/search_response.h>
+#include <libspotify/api.h>
 
 struct sp_search;
 
@@ -16,20 +16,19 @@ public:
   std::string did_you_mean();
 
   size_t num_tracks();
-  /*track*/ void track(size_t num);
+  sp_track* track(size_t num);
   size_t total_tracks();
 
   size_t num_albums();
-  /*album*/ void album(size_t num);
+  sp_album* album(size_t num);
   size_t total_albums();
 
   size_t num_playlists();
-  /*playlist*/ void playlist(size_t num);
-  /* playlist related uri? */
+  sp_playlist* playlist(size_t num);
   size_t total_playlists();
 
   size_t num_artists();
-  /*artist*/ void artist(size_t num);
+  sp_artist* artist(size_t num);
   size_t total_artists();
   
 private:

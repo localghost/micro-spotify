@@ -19,7 +19,7 @@ size_t search_response::num_tracks()
   return impl->num_tracks();
 }
 
-/*track*/ void search_response::track(size_t num)
+sp_track* search_response::track(size_t num)
 {
   return impl->track(num);
 }
@@ -34,7 +34,7 @@ size_t search_response::num_albums()
   return impl->num_albums();
 }
 
-/*album*/ void search_response::album(size_t num)
+sp_album* search_response::album(size_t num)
 {
   return impl->album(num);
 }
@@ -49,7 +49,7 @@ size_t search_response::num_playlists()
   return impl->num_playlists();
 }
 
-/*playlist*/ void search_response::playlist(size_t num)
+sp_playlist* search_response::playlist(size_t num)
 {
   return impl->playlist(num);
 }
@@ -64,7 +64,7 @@ size_t search_response::num_artists()
   return impl->num_artists();
 }
 
-/*artist*/ void search_response::artist(size_t num)
+sp_artist* search_response::artist(size_t num)
 {
   return impl->artist(num);
 }
