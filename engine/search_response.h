@@ -34,7 +34,7 @@ private:
 
   explicit search_response(search_response_impl*);
 
-  std::unique_ptr<search_response_impl> impl;
+  std::shared_ptr<search_response_impl> impl;
 };
 }
 
