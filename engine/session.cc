@@ -141,7 +141,6 @@ void session::log_out()
 
 void session::search(search_request request)
 {
-
   auto t = base::make_task([this, &request]
       {
         // only this assures that sp_search will be added to search_requests
@@ -162,7 +161,7 @@ void session::search(search_request request)
                                         static_cast<int>(request.playlist_offset),
                                         static_cast<int>(request.playlist_count),
                                         SP_SEARCH_STANDARD, &session::search_completed, this);
-        search_requests.insert(std::make_pair(s, std::move(request)));
+        search_requests[s] = std::move(request);
 
       });
   spotify_thread().queue_task(std::move(t));
@@ -224,24 +223,22 @@ void session::search_completed(sp_search* result, void* data)
   assert(data);
   session* self = static_cast<session*>(data);
 
-  std::unique_ptr<search_response_impl> response;
+  std::unique_lock<std::mutex> guard{self->search_mutex};
+  auto request_it = self->search_requests.find(result);
+  if (self->search_requests.end() == request_it)
   {
-    std::lock_guard<std::mutex> guard{self->search_mutex};
-    auto request_it = self->search_requests.find(result);
-    if (self->search_requests.end() == request_it)
-    {
-      LOG_ERROR << "Search completed for an un-registered request";
-      sp_search_release(result);
-      return;
-    }
-
-    auto request = std::move(request_it->second);
-    response.reset(new search_response_impl{result});
-    self->search_requests.erase(request_it);
+    LOG_ERROR << "Search completed for an un-registered request";
+    sp_search_release(result);
+    return;
   }
 
-  // TODO This should go through the task scheduler otherwise session is blocked
-  request.search_completed(search_response{response.get()});
+  auto request = std::move(request_it->second);
+  std::unique_ptr<search_response_impl> response{new search_response_impl{result}};
+  self->search_requests.erase(request_it);
+  guard.unlock();
+
+  // TODO This should go through the task scheduler
+  request.search_completed(search_response{response.release()});
 }
 
 void session::process_events()
