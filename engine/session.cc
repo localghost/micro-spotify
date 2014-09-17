@@ -12,6 +12,7 @@
 #include "global_thread_manager.h"
 #include "search_response.h"
 #include "search_response_impl.h"
+#include "player.h"
 
 namespace signals = boost::signals2;
 
@@ -141,7 +142,7 @@ void session::log_out()
 
 player session::get_player()
 {
-  return result{session_};
+  return player{session_};
 }
 
 void session::search(search_request request)
@@ -219,7 +220,7 @@ int session::music_delivery(sp_session* /*session_*/,
                             const void* /*frames*/,
                             int /*num_frames*/)
 {
-  LOG(DEBUG) << "here";
+  LOG_DEBUG << "here";
   return 0;
 }
 
