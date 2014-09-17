@@ -39,7 +39,7 @@ size_t search_response_impl::num_tracks()
 
 sp_track* search_response_impl::track(size_t num)
 {
-  auto t = base::make_task([]
+  auto t = base::make_task([this, num]
       {
         sp_track* result = sp_search_track(search, static_cast<int>(num));
         // FIXME Can it happen only when num > sp_search_nm_tracks - 1?

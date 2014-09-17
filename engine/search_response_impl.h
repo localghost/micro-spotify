@@ -1,6 +1,7 @@
 #ifndef ENGINE_SEARCH_RESPONSE_IMPL_H
 #define ENGINE_SEARCH_RESPONSE_IMPL_H
 
+#include <string>
 #include <libspotify/api.h>
 
 struct sp_search;
