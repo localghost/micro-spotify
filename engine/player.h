@@ -5,13 +5,15 @@
 #include <libspotify/api.h>
 #include <base/task.h>
 #include <base/thread.h>
+#include <engine/frame.h>
+#include <engine/global_thread_manager.h>
 
 namespace engine {
 //class player_impl;
 
 class player
 {
-  typedef boost::signals2::signal<unsigned(const frame&)> sink_sinal_type;
+  typedef boost::signals2::signal<unsigned(const frame&)> sink_signal_type;
 
 public:
   typedef sink_signal_type::slot_type sink_slot_type;
@@ -22,7 +24,7 @@ public:
           {
             sp_session_player_load(session_, track);
             sp_session_player_play(session_, true);
-          });
+          }));
   }
 //  void pause();
 //  void seek();
