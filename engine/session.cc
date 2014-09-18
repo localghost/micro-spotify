@@ -215,12 +215,31 @@ void session::notify_main_thread(sp_session* session_)
       base::make_task(static_cast<void(session::*)()>(&session::notify_main_thread), self));
 }
 
-int session::music_delivery(sp_session* /*session_*/,
-                            const sp_audioformat* /*format*/,
-                            const void* /*frames*/,
-                            int /*num_frames*/)
+int session::music_delivery(sp_session* session_,
+                            const sp_audioformat* format,
+                            const void* frames,
+                            int num_frames)
 {
   LOG_DEBUG << "here";
+
+  session* self = static_cast<session*>(sp_session_userdata(session_));
+  assert(self);
+
+  frame f;
+  f.samples = static_cast<unsigned>(num_frames);
+  f.data = new int16_t[num_frames * format->channels];
+  memcpy(const_cast<void*>(f.data), frames, sizeof(int16_t) * num_frames * format->channels);
+  f.channels = static_cast<unsigned>(format->channels);
+  f.rate = static_cast<unsigned>(format->sample_rate);
+
+  // FIXME add support for cancellation
+  audio_thread().queue_task(base::make_task([](session* session_, frame& f)
+      {
+        // FIXME if I move here then it will work only for the first
+        //       callback
+        session_->on_frames_delivered(std::move(f));
+      }, self, std::ref(f)));
+
   return 0;
 }
 

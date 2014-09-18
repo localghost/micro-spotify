@@ -11,6 +11,7 @@
 #include <engine/configuration.h>
 #include <engine/search_request.h>
 #include <engine/player.h>
+#include <engine/frame.h>
 
 namespace engine {
 typedef boost::error_info<struct spotify_error_info_t, sp_error> spotify_error_info;
@@ -20,7 +21,7 @@ class session FINAL
 {
     typedef boost::signals2::signal<void(sp_error)> logged_in_signal_type;
     typedef boost::signals2::signal<void()> logged_out_signal_type;
-    typedef boost::signals2::signal<void(sp_error)> frames_delivered_signal_type;
+    typedef boost::signals2::signal<void(const frame&)> frames_delivered_signal_type;
 
 public:
     typedef logged_in_signal_type::slot_type logged_in_slot_type;
