@@ -9,6 +9,7 @@ enum struct global_thread_id : std::size_t
 {
   main_thread = 0, //ui_thread - TODO
   spotify_thread,
+  audio_thread,
   thread_count
 };
 
@@ -26,10 +27,15 @@ private:
   base::thread threads_[static_cast<std::size_t>(global_thread_id::thread_count)];
 };
 
-inline base::thread& spotify_thread()
-{
-  return global_thread_manager::get_thread(global_thread_id::spotify_thread);
-}
+#define DEFINE_THREAD_ACCESSOR(thread_id) \
+  inline base::thread& thread_id() \
+  { \
+    return global_thread_manager::get_thread(global_thread_id::thread_id); \
+  }
+
+DEFINE_THREAD_ACCESSOR(spotify_thread)
+DEFINE_THREAD_ACCESSOR(audio_thread)
+
 }
 
 #endif
