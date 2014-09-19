@@ -23,6 +23,13 @@ typedef std::conditional<std::chrono::high_resolution_clock::is_steady,
                          std::chrono::high_resolution_clock,
                          std::chrono::steady_clock>::type
                          high_steady_clock;
+
+typedef high_steady_clock::duration time_delay;
+}
+
+inline std::chrono::milliseconds operator"" _ms(unsigned long long milliseconds)
+{
+  return std::chrono::milliseconds{milliseconds};
 }
 
 #endif

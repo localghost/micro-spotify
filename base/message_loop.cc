@@ -36,7 +36,7 @@ void message_loop::stop()
 //       on which message_loop is spinning and it has no delay; use case: 
 //       task is pushed on a loop and get() on its handle is called, in such
 //       case application blocks
-void message_loop::queue_task_(std::unique_ptr<task_model_base>&& task_, std::chrono::milliseconds delay)
+void message_loop::queue_task_(queued_task&& t)
 {
 //  if (!active_) return;
 //  LOG_DEBUG << "pushing a task on a thread: " << base::thread::current()->id();
@@ -49,7 +49,7 @@ void message_loop::queue_task_(std::unique_ptr<task_model_base>&& task_, std::ch
 
     bool is_empty = queue_.empty();
 
-    queue_.push_back(queued_task{std::move(task_), high_steady_clock::now() + delay});
+    queue_.push_back(std::move(t));
     std::push_heap(queue_.begin(), queue_.end());
 
     if (is_empty || (queue_.front().when < next_loop_time_))
@@ -89,7 +89,7 @@ void message_loop::exec()
       if (!queue_.empty()) next_loop_time_ = queue_.front().when;
     }    
     for (queued_task& t : tasks)
-      t.task_->call();
+      t.action->call();
   }
 }
 }
