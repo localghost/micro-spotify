@@ -1,12 +1,12 @@
 #include "global_thread_manager.h"
 
 #include <base/log.h>
-#include <cassert>
+#include <base/assert.h>
 
 namespace engine {
 base::thread& global_thread_manager::get_thread(global_thread_id id)
 {
-  assert(thread_index(id) < thread_index(global_thread_id::thread_count));
+  PRECONDITION(thread_index(id) < thread_index(global_thread_id::thread_count));
 
   static global_thread_manager gtm;
 
