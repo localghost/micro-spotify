@@ -1,54 +1,47 @@
 #ifndef BASE_CALLABLE_H
 #define BASE_CALLABLE_H
 
-#include <type_traits>
 #include <memory>
-
-#include <base/compatibility.h>
+#include <type_traits>
 
 namespace base {
-class callable FINAL
+class callable
 {
-  struct callable_model_base
-  {
-    virtual ~callable_model_base() { }
-    virtual void call() const = 0;
-  };
-
-  template<typename CallableT>
-  class callable_model : public callable_model_base
+private:
+  class model_base
   {
   public:
-    // CallableU is the same as CallableT
-    template<typename CallableU, typename std::enable_if<!std::is_same<callable_model, CallableU>::value>::type* = nullptr>
-    callable_model(CallableU&& c) : callable_(c) { }
+    virtual ~model_base() = default;
+    virtual void call() = 0;
+  };
 
-    void call() const { callable_(); }
+  template<typename T>
+  class model : public model_base
+  {
+  public:
+    template<typename U, typename std::enable_if<!std::is_same<model, U>::value>::type* = nullptr>
+    explicit model(U&& action) : action{std::forward<U>(action)} {}
+
+    void call()
+    {
+      action();
+    }
 
   private:
-    CallableT callable_;
+    T action;
   };
 
 public:
-  callable() = default;
-
-  // FIXME the enable_f check is not sufficient probably! Though it prevents
-  //       from "too perfect forwarding" but it accepts arguments of e.g.
-  //       integral type
-  template<typename CallableT, typename std::enable_if<!std::is_same<callable, CallableT>::value>::type* = nullptr>
-  callable(CallableT&& c)
-  {
-    callable_.reset(new callable_model<CallableT>{std::forward<CallableT>(c)});
-  }
+  template<typename T>
+  explicit callable(T&& t) : action{new model<T>{std::forward<T>(t)}} {}
 
   void operator()()
   {
-    if (callable_)
-      callable_->call();
+    action->call();
   }
 
 private:
-  std::shared_ptr<const callable_model_base> callable_;
+  std::shared_ptr<model_base> action;
 };
 }
 
