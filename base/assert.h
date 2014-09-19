@@ -3,4 +3,7 @@
 
 #include <boost/assert.hpp>
 
+#define PRECONDITION(cond) \
+  BOOST_ASSERT_MSG(cond, "Precondition \"" #cond "\" violated")
+
 #endif
