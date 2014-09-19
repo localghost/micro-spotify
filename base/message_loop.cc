@@ -89,7 +89,7 @@ void message_loop::exec()
       if (!queue_.empty()) next_loop_time_ = queue_.front().when;
     }    
     for (queued_task& t : tasks)
-      t.action->call();
+      t.action();
   }
 }
 }
