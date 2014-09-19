@@ -252,19 +252,14 @@ public:
 
   task() = default;
 
-  // TODO Accepting only callable enforces to use std::bind() if arguments to the callable
-  //      should be passed. Should this ctor accept also arguments, similarly to e.g. std::packaged_task??
-  //      Should it be protected against too perfect fwd? (guess so, it could produce some weird errors)
   // This looks like a premature optimization, is it? Isn't std::bind() optimized already for callables
   // that don't take any arguments?
-  template<typename F>
+  template<typename F, typename std::enable_if<!std::is_same<task, F>::value>::type* = nullptr>
   explicit task(F&& callable)
     : callable_(std::forward<F>(callable)),
       state_(new task_state<result_type>)
   { }
 
-  // TODO Accepting only callable enforces to use std::bind() if arguments to the callable
-  //      should be passed. Should this ctor accept also arguments, similarly to e.g. std::packaged_task??
   template<typename F, typename ...Args>
   explicit task(F&& callable, Args&&... args)
     : callable_(std::bind(std::forward<F>(callable), std::forward<Args>(args)...)),
@@ -337,7 +332,6 @@ public:
 private:
   std::function<result_type()> callable_;
   std::shared_ptr<task_state<result_type>> state_;
-  // TODO compare performance against std::atomic<bool>?
   mutable std::atomic<bool> handle_acquired_{false};
 };
 
@@ -349,7 +343,7 @@ public:
 
   task() = default;
 
-  template<typename F>
+  template<typename F, typename std::enable_if<!std::is_same<task, F>::value>::type* = nullptr>
   explicit task(F&& callable)
     : callable_(std::forward<F>(callable)),
       state_(new task_state<result_type>)
