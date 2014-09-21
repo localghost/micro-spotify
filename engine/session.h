@@ -8,6 +8,7 @@
 #include <libspotify/api.h>
 #include <base/thread.h>
 #include <base/exception.h>
+#include <base/request_map.h>
 #include <engine/configuration.h>
 #include <engine/search_request.h>
 #include <engine/player.h>
@@ -19,59 +20,68 @@ EXCEPTION_TYPE(spotify_error);
 
 class session FINAL
 {
-    typedef boost::signals2::signal<void(sp_error)> logged_in_signal_type;
-    typedef boost::signals2::signal<void()> logged_out_signal_type;
-    typedef boost::signals2::signal<void(const frame&)> frames_delivered_signal_type;
+  typedef base::request_map<search_request> search_requests_type;
+
+  struct search_r
+  {
+    search_requests_type::id_type id;
+    session* self;
+  };
+
+  typedef boost::signals2::signal<void(sp_error)> logged_in_signal_type;
+  typedef boost::signals2::signal<void()> logged_out_signal_type;
+  typedef boost::signals2::signal<void(frame)> frames_delivered_signal_type;
 
 public:
-    typedef logged_in_signal_type::slot_type logged_in_slot_type;
-    typedef logged_out_signal_type::slot_type logged_out_slot_type;
-    typedef frames_delivered_signal_type::slot_type frames_delivered_slot_type;
+  typedef logged_in_signal_type::slot_type logged_in_slot_type;
+  typedef logged_out_signal_type::slot_type logged_out_slot_type;
+  typedef frames_delivered_signal_type::slot_type frames_delivered_slot_type;
 
-    explicit session(configuration& config);
-    ~session();
+  explicit session(configuration& config);
+  ~session();
 
-    void log_in();
-    void log_out();
+  void log_in();
+  void log_out();
 
-//    playlist_container get_playlist_container();
-    player get_player();
-    void search(search_request request);
+  //    playlist_container get_playlist_container();
+  player get_player();
+  void search(search_request request);
 
-    boost::signals2::connection connect_logged_in(const logged_in_slot_type& slot);
-    boost::signals2::connection connect_logged_out(const logged_out_slot_type& slot);
-    boost::signals2::connection connect_frames_delivered(const frames_delivered_slot_type& slot);
+  boost::signals2::connection connect_logged_in(const logged_in_slot_type& slot);
+  boost::signals2::connection connect_logged_out(const logged_out_slot_type& slot);
+  boost::signals2::connection connect_frames_delivered(const frames_delivered_slot_type& slot);
 
 private:
-    static sp_session_callbacks initialize_session_callbacks();
+  static sp_session_callbacks initialize_session_callbacks();
 
-    static void log_message(sp_session* session_, const char* message);
-    static void logged_in(sp_session* session_, sp_error error);
-    static void logged_out(sp_session* session_);
-    static int music_delivery(sp_session* session_,
-                              const sp_audioformat* format,
-                              const void* frames,
-                              int num_frames);
-    static void notify_main_thread(sp_session* session_);
-    static void search_completed(sp_search* result, void* data);
+  static void log_message(sp_session* session_, const char* message);
+  static void logged_in(sp_session* session_, sp_error error);
+  static void logged_out(sp_session* session_);
+  static int music_delivery(sp_session* session_,
+                            const sp_audioformat* format,
+                            const void* frames,
+                            int num_frames);
+  static void notify_main_thread(sp_session* session_);
+  static void search_completed(sp_search* result, void* data);
 
-    void create_session();
-    void process_events();
-    void notify_main_thread();
+  void create_session();
+  void process_events();
+  void notify_main_thread();
 
-    static const sp_session_callbacks session_callbacks_;
-    base::task_handle<void> process_events_handle_;
-    base::task_handle<void> notify_main_thread_handle_;
+  static const sp_session_callbacks session_callbacks_;
+  base::task_handle<void> process_events_handle_;
+  base::task_handle<void> notify_main_thread_handle_;
 
-    sp_session* session_;
-    sp_session_config session_config_;
+  sp_session* session_;
+  sp_session_config session_config_;
 
-    logged_in_signal_type on_logged_in;
-    logged_out_signal_type on_logged_out;
-    frames_delivered_signal_type on_frames_delivered;
+  logged_in_signal_type on_logged_in;
+  logged_out_signal_type on_logged_out;
+  frames_delivered_signal_type on_frames_delivered;
 
-    std::map<sp_search*, search_request> search_requests;
-    std::mutex search_mutex;
+  base::request_map<search_request> search_requests;
+  //    std::map<sp_search*, search_request> search_requests;
+  std::mutex search_mutex;
 };
 }
 

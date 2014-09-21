@@ -147,7 +147,14 @@ player session::get_player()
 
 void session::search(search_request request)
 {
-  auto t = base::make_task([this, &request]
+  search_requests_type::id_type id;
+  std::unique_ptr<search_r> rrequest;
+  {
+    std::lock_guard<std::mutex> guard{search_mutex};
+    id = search_requests.insert(std::move(request));
+  }
+  rrequest.reset(new search_r{id, this});
+  auto t = base::make_task([this, request]() mutable
       {
         // only this assures that sp_search will be added to search_requests
         // before its presence is checked in the search_completed callback
@@ -170,6 +177,7 @@ void session::search(search_request request)
         search_requests[s] = std::move(request);
 
       });
+  // FIXME make it cancellable
   spotify_thread().queue_task(std::move(t));
 }
 
@@ -227,20 +235,20 @@ int session::music_delivery(sp_session* session_,
 
   frame f;
   f.samples = static_cast<unsigned>(num_frames);
-  f.data = new int16_t[num_frames * format->channels];
-  memcpy(const_cast<void*>(f.data), frames, sizeof(int16_t) * num_frames * format->channels);
+  f.data.reset(new int16_t[num_frames * format->channels]);
+  memcpy(const_cast<int16_t*>(f.data.get()), frames, sizeof(int16_t) * num_frames * format->channels);
   f.channels = static_cast<unsigned>(format->channels);
   f.rate = static_cast<unsigned>(format->sample_rate);
 
   // FIXME add support for cancellation
-  audio_thread().queue_task(base::make_task([](session* session_, frame& f)
+  audio_thread().queue_task(base::make_task([](session* session_, frame f)
       {
         // FIXME if I move here then it will work only for the first
         //       callback
-        session_->on_frames_delivered(std::move(f));
-      }, self, std::ref(f)));
+        session_->on_frames_delivered(f);
+      }, self, f));
 
-  return 0;
+  return num_frames;
 }
 
 void session::search_completed(sp_search* result, void* data)
@@ -259,8 +267,8 @@ void session::search_completed(sp_search* result, void* data)
   }
 
   auto request = std::move(request_it->second);
-  std::unique_ptr<search_response_impl> response{new search_response_impl{result}};
   self->search_requests.erase(request_it);
+  std::unique_ptr<search_response_impl> response{new search_response_impl{result}};
   guard.unlock();
 
   // TODO This should go through the task scheduler

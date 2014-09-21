@@ -10,6 +10,8 @@
 namespace base {
 namespace log {
 namespace {
+std::mutex m;
+
 const char* severity_to_string(severity severity_)
 {
   switch (severity_)
@@ -49,7 +51,6 @@ std::ostream& message::stream()
 
 message::~message()
 {
-  static std::mutex m;
   try
   {
     std::lock_guard<std::mutex> guard{m};
