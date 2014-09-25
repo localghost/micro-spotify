@@ -20,6 +20,7 @@ inline std::size_t global_thread_manager::thread_index(global_thread_id id)
 
 global_thread_manager::global_thread_manager()
 {
+  // FIXME There is a race with something!!! (probably some other static)
   LOG_DEBUG << "global_thread_manager starting up...";
   // FIXME What if some code in main_thread queues a task to a spotify_thread
   //       before it is started? Currently, an assert will be thrown so either

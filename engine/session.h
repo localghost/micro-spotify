@@ -86,7 +86,8 @@ private:
 
 //  search_requests_type search_requests;
   //    std::map<sp_search*, search_request> search_requests;
-  std::unordered_set<std::unique_ptr<search_request_data>> search_requests;
+  // FIXME Use either hash table or request_map
+  std::vector<std::unique_ptr<search_request_data>> search_requests;
   std::mutex search_mutex;
 };
 }

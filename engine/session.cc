@@ -41,8 +41,8 @@ const std::uint8_t application_key[] = {
     0x8E, 0x2A, 0x83, 0xB4, 0x9B, 0x16, 0xE6, 0x2F, 0x04, 0xE6, 0xF5, 0x5A, 0x2F, 0x9E, 0xFD, 0x97,
     0x49,
 };
-const char username[] = "";
-const char password[] = "";
+const char username[] = "arwmar";
+const char password[] = "never1minD";
 const char application_name[] = "micro-spotify";
 }
 
@@ -160,7 +160,7 @@ void session::search(search_request request, search_completed_callback callback)
         std::unique_ptr<search_request_data> data_ptr{data};
         {
           std::lock_guard<std::mutex> guard{search_mutex};
-          search_requests.insert(std::move(data_ptr));
+          search_requests.push_back(std::move(data_ptr));
         }
         // FIXME store it somewhere so that if search_completed does not fire
         //       it still should be released!
@@ -262,7 +262,14 @@ void session::search_completed(sp_search* result, void* data)
   std::unique_ptr<search_request_data> request_data{static_cast<search_request_data*>(data)};
   {
     std::lock_guard<std::mutex> guard{request_data->self->search_mutex};
-    request_data->self->search_requests.erase(request_data);
+    auto it = std::find(request_data->self->search_requests.begin(),
+                        request_data->self->search_requests.end(),
+                        request_data);
+    if (request_data->self->search_requests.end() != it)
+    {
+      it->release();
+      request_data->self->search_requests.erase(it);
+    }
     // FIXME check if erase() found the element to be erased
   }
 
