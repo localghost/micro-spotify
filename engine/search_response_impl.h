@@ -10,8 +10,12 @@ namespace engine {
 class search_response_impl
 {
 public:
+  // Ownership is transfered to this
   explicit search_response_impl(sp_search* search);
+  search_response_impl(const search_response_impl&) = delete;
   ~search_response_impl();
+
+  search_response_impl& operator=(const search_response_impl&) = delete;
 
   std::string query();
   std::string did_you_mean();

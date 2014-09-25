@@ -164,6 +164,11 @@ void session::search(search_request request, search_completed_callback callback)
         }
         // FIXME store it somewhere so that if search_completed does not fire
         //       it still should be released!
+        //       According to an example in libspotify 
+        //       (https://developer.spotify.com/docs/libspotify/12.1.51/search_8c-example.html#a18)
+        //       it is enough to release in callback.
+        //       But what if search is cancelled? Will sp_search_release() call search_completed
+        //       with search error? (TODO test this)
         sp_search* s = sp_search_create(session_, request.query.c_str(),
                                         static_cast<int>(request.track_offset),
                                         static_cast<int>(request.track_count),
@@ -259,6 +264,14 @@ void session::search_completed(sp_search* result, void* data)
     std::lock_guard<std::mutex> guard{request_data->self->search_mutex};
     request_data->self->search_requests.erase(request_data);
     // FIXME check if erase() found the element to be erased
+  }
+
+  if (SP_ERROR_OK != sp_search_error(result))
+  {
+    sp_search_release(result);
+    // TODO it would nice to print the query
+    LOG_ERROR << "Search failed";
+    return;
   }
 
   // TODO This should go through the task scheduler
