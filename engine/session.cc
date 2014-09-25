@@ -145,16 +145,9 @@ player session::get_player()
   return player{session_};
 }
 
-void session::search(search_request request)
+void session::search(search_request request, search_completed_callback callback)
 {
-  search_requests_type::id_type id;
-  std::unique_ptr<search_r> rrequest;
-  {
-    std::lock_guard<std::mutex> guard{search_mutex};
-    id = search_requests.insert(std::move(request));
-  }
-  rrequest.reset(new search_r{id, this});
-  auto t = base::make_task([this, request]() mutable
+  auto t = base::make_task([this, request, callback]() mutable
       {
         // only this assures that sp_search will be added to search_requests
         // before its presence is checked in the search_completed callback
@@ -163,7 +156,14 @@ void session::search(search_request request)
         // FIXME This causes the lock to be held longer than necessary, mark
         //       each request with an id and pass that id to callback; guard
         //       only insert() and move insert() before sp_search_create()
-        std::lock_guard<std::mutex> guard{search_mutex};
+        search_request_data* data = new search_request_data{this, std::move(callback)};
+        std::unique_ptr<search_request_data> data_ptr{data};
+        {
+          std::lock_guard<std::mutex> guard{search_mutex};
+          search_requests.insert(std::move(data_ptr));
+        }
+        // FIXME store it somewhere so that if search_completed does not fire
+        //       it still should be released!
         sp_search* s = sp_search_create(session_, request.query.c_str(),
                                         static_cast<int>(request.track_offset),
                                         static_cast<int>(request.track_count),
@@ -173,8 +173,7 @@ void session::search(search_request request)
                                         static_cast<int>(request.artist_count),
                                         static_cast<int>(request.playlist_offset),
                                         static_cast<int>(request.playlist_count),
-                                        SP_SEARCH_STANDARD, &session::search_completed, this);
-        search_requests[s] = std::move(request);
+                                        SP_SEARCH_STANDARD, &session::search_completed, data);
 
       });
   // FIXME make it cancellable
@@ -255,24 +254,15 @@ void session::search_completed(sp_search* result, void* data)
 {
   // TODO add synchronisation or go through a private thread
   assert(data);
-  session* self = static_cast<session*>(data);
-
-  std::unique_lock<std::mutex> guard{self->search_mutex};
-  auto request_it = self->search_requests.find(result);
-  if (self->search_requests.end() == request_it)
+  std::unique_ptr<search_request_data> request_data{static_cast<search_request_data*>(data)};
   {
-    LOG_ERROR << "Search completed for an un-registered request";
-    sp_search_release(result);
-    return;
+    std::lock_guard<std::mutex> guard{request_data->self->search_mutex};
+    request_data->self->search_requests.erase(request_data);
+    // FIXME check if erase() found the element to be erased
   }
 
-  auto request = std::move(request_it->second);
-  self->search_requests.erase(request_it);
-  std::unique_ptr<search_response_impl> response{new search_response_impl{result}};
-  guard.unlock();
-
   // TODO This should go through the task scheduler
-  request.search_completed(search_response{response.release()});
+  request_data->callback(search_response{new search_response_impl{result}});
 }
 
 void session::process_events()

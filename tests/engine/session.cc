@@ -161,9 +161,8 @@ BOOST_AUTO_TEST_CASE(TCEngineSessionLogOut)
     engine::search_request request;
     request.query = "eminem";
     request.artist_count  = 5;
-    request.search_completed.connect([](engine::search_response response) { LOG_INFO << "GOT IT"; });
     
-    s.search(std::move(request));
+    s.search(std::move(request), [](engine::search_response response) { LOG_INFO << "GOT IT"; });
 
     {
       std::unique_lock<std::mutex> guard{m};

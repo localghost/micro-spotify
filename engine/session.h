@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <map>
 #include <mutex>
+#include <memory>
+#include <unordered_set>
 #include <boost/signals2.hpp>
 #include <libspotify/api.h>
 #include <base/thread.h>
@@ -11,6 +13,7 @@
 #include <base/request_map.h>
 #include <engine/configuration.h>
 #include <engine/search_request.h>
+#include <engine/search_response.h>
 #include <engine/player.h>
 #include <engine/frame.h>
 
@@ -20,22 +23,18 @@ EXCEPTION_TYPE(spotify_error);
 
 class session FINAL
 {
-  typedef base::request_map<search_request> search_requests_type;
-
-  struct search_r
-  {
-    search_requests_type::id_type id;
-    session* self;
-  };
-
+private:
   typedef boost::signals2::signal<void(sp_error)> logged_in_signal_type;
   typedef boost::signals2::signal<void()> logged_out_signal_type;
   typedef boost::signals2::signal<void(frame)> frames_delivered_signal_type;
+
 
 public:
   typedef logged_in_signal_type::slot_type logged_in_slot_type;
   typedef logged_out_signal_type::slot_type logged_out_slot_type;
   typedef frames_delivered_signal_type::slot_type frames_delivered_slot_type;
+
+  typedef std::function<void(search_response)> search_completed_callback;
 
   explicit session(configuration& config);
   ~session();
@@ -45,13 +44,19 @@ public:
 
   //    playlist_container get_playlist_container();
   player get_player();
-  void search(search_request request);
+  void search(search_request request, search_completed_callback callback);
 
   boost::signals2::connection connect_logged_in(const logged_in_slot_type& slot);
   boost::signals2::connection connect_logged_out(const logged_out_slot_type& slot);
   boost::signals2::connection connect_frames_delivered(const frames_delivered_slot_type& slot);
 
 private:
+  struct search_request_data
+  {
+    session* self;
+    search_completed_callback callback;
+  };
+
   static sp_session_callbacks initialize_session_callbacks();
 
   static void log_message(sp_session* session_, const char* message);
@@ -79,8 +84,9 @@ private:
   logged_out_signal_type on_logged_out;
   frames_delivered_signal_type on_frames_delivered;
 
-  base::request_map<search_request> search_requests;
+//  search_requests_type search_requests;
   //    std::map<sp_search*, search_request> search_requests;
+  std::unordered_set<std::unique_ptr<search_request_data>> search_requests;
   std::mutex search_mutex;
 };
 }
