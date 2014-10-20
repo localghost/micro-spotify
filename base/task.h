@@ -8,7 +8,9 @@
 #include <functional>
 #include <exception>
 #include <type_traits>
+#include <utility>
 #include <boost/scope_exit.hpp>
+#include <base/assert.h>
 #include <base/exception.h>
 #include <base/compatibility.h>
 
@@ -26,72 +28,78 @@ enum struct task_error_code
 typedef ::boost::error_info<struct task_error_code_tag, task_error_code> task_error_info;
 EXCEPTION_TYPE(task_error);
 
-template<typename R>
-class task_state_result_storage
+// TODO Do I need specialization for T&?
+// TODO Do I need specialization for void?
+// TODO In fact it would be better to implement Small Shared State Optimization
+//      instead of just differenting between integral and not integral types.
+template<typename T, bool = std::is_integral<T>::value>
+struct task_shared_state_traits;
+
+template<typename T>
+struct task_shared_state_traits<T, false>
 {
-public:
-  typedef R result_type;
+  typedef std::unique_ptr<T> storage_type;
+  typedef const T& lvalue_value_type;
+  typedef T&& rvalue_value_type;
 
-  ~task_state_result_storage()
+  static void set_value(storage_type& storage, lvalue_value_type value)
   {
-    if (has_result)
-      destroy_storage();
+    storage.reset(new T{value});
   }
 
-  template<typename T>
-  void set_result(T&& result)
+  static void set_value(storage_type& storage, rvalue_value_type value)
   {
-    if (has_result)
-      destroy_storage();
-
-    ::new (&result_) result_type{std::forward<T>(result)};
-    has_result = true;
+    storage.reset(new T{std::move(value)});
   }
 
-  result_type get_result()
+  static T get_value(storage_type& storage)
   {
-    return std::move(*static_cast<result_type*>(static_cast<void*>(&result_)));
+    BOOST_ASSERT(storage);
+    return *storage.release();
   }
-
-private:
-  void destroy_storage()
-  {
-    static_cast<result_type*>(static_cast<void*>(&result_))->~result_type();
-  }
-
-  bool has_result{false};
-  typename std::aligned_storage<sizeof(result_type), alignof(result_type)>::type result_;
 };
 
-template<>
-class task_state_result_storage<void>
+template<typename T>
+struct task_shared_state_traits<T, true>
 {
-  typedef void result_type;
+  typedef T storage_type;
+  typedef const T& lvalue_value_type;
+  typedef T&& rvalue_value_type;
+
+  // Use this for rvalue as well (for now?)
+  static void set_value(storage_type& storage, lvalue_value_type value)
+  {
+    storage = value;
+  }
+
+  static T get_value(storage_type& storage)
+  {
+    return std::move(storage);
+  }
 };
 
-template<typename R>
-class task_state : public task_state_result_storage<R>
+enum struct task_state { initialized, running, cancelled, finished };
+
+class task_shared_state_base
 {
 public:
-  enum struct state { initialized, running, cancelled, finished };
-
-  task_state() : state_{state::initialized} {}
+  task_shared_state_base() : state_{task_state::initialized} {}
 
   bool is_ready() const noexcept
   {
-    return (state_ == state::cancelled || state_ == state::finished);
+    return (task_state::cancelled == state_ || task_state::finished == state_);
   }
 
   void make_ready() noexcept
   {
-    state_ = state::finished;
+    state_ = task_state::finished;
     wait_cv_.notify_all();
   }
 
   bool mark_running() noexcept
   {
-    state expected = state::initialized;
-    return state_.compare_exchange_strong(expected, state::running);
+    task_state expected = task_state::initialized;
+    return state_.compare_exchange_strong(expected, task_state::running);
   }
 
   void wait() const
@@ -100,24 +108,19 @@ public:
       return;
 
     std::unique_lock<std::mutex> lock(wait_mutex_);
-    wait_cv_.wait(lock, std::bind(&task_state::is_ready, this));
+    wait_cv_.wait(lock, std::bind(&task_shared_state_base::is_ready, this));
   }
 
   bool cancel() noexcept
   {
-    state expected = state::initialized;
-    return state_.compare_exchange_strong(expected, state::cancelled);
+    task_state expected = task_state::initialized;
+    return state_.compare_exchange_strong(expected, task_state::cancelled);
   }
 
   bool is_cancelled() const noexcept
   {
-    return state::cancelled == state_;
+    return task_state::cancelled == state_;
   }
-
-//  task_state::state get_state() const
-//  {
-//    return state_;
-//  }
 
   void set_exception(std::exception_ptr exception) noexcept
   {
@@ -130,11 +133,41 @@ public:
   }
 
 private:
-  std::atomic<state> state_;
+  std::atomic<task_state> state_;
   mutable std::mutex wait_mutex_;
   mutable std::condition_variable wait_cv_;
   std::exception_ptr exception_;
 };
+
+template<typename R>
+class task_shared_state : public task_shared_state_base
+{
+public:
+  void set_result(typename task_shared_state_traits<R>::lvalue_value_type result)
+  {
+    task_shared_state_traits<R>::set_value(storage, result);
+  }
+
+  void set_result(typename task_shared_state_traits<R>::rvalue_value_type result)
+  {
+    task_shared_state_traits<R>::set_value(storage, std::move(result));
+  }
+
+  R get_result()
+  {
+    return task_shared_state_traits<R>::get_value(storage);
+  }
+
+private:
+  typename task_shared_state_traits<R>::storage_type storage;
+};
+
+template<>
+class task_shared_state<void> : public task_shared_state_base
+{
+public:
+  void get_result() { }
+}; 
 
 template<typename R>
 class task_handle FINAL
@@ -196,68 +229,10 @@ public:
 private:
   template<typename> friend class task;
 
-  explicit task_handle(const std::shared_ptr<task_state<result_type>>& state) noexcept
+  explicit task_handle(const std::shared_ptr<task_shared_state<result_type>>& state) noexcept
     : state_(state) { }
 
-  std::shared_ptr<task_state<result_type>> state_;
-};
-
-template<>
-class task_handle<void> FINAL
-{
-public:
-  typedef void result_type;
-
-  task_handle() = default;
-  task_handle(const task_handle&) = delete;
-  task_handle(task_handle&&) = default;
-
-  void operator=(const task_handle&) = delete;
-  task_handle& operator=(task_handle&&) = default;
-
-  result_type get()
-  {
-    wait();
-
-    BOOST_SCOPE_EXIT_ALL(this) { state_.reset(); };
-
-    // FIXME
-    if (state_->is_cancelled())
-      THROW(task_error{} << task_error_info{task_error_code::cancelled});
-
-    std::exception_ptr exception = state_->get_exception();
-    if (nullptr != exception)
-      std::rethrow_exception(exception);
-  }
-
-  void wait() const
-  {
-    if (!state_)
-      THROW(task_error{} << task_error_info{task_error_code::no_state});
-
-    state_->wait();
-  }
-
-  bool cancel()
-  {
-    if (!state_)
-      THROW(task_error{} << task_error_info{task_error_code::no_state});
-
-    return state_->cancel();
-  }
-
-  bool is_valid() const
-  {
-    return bool(state_);
-  }
-
-private:
-  template<typename> friend class task;
-
-  explicit task_handle(const std::shared_ptr<task_state<result_type>>& state) noexcept
-    : state_(state) { }
-
-  std::shared_ptr<task_state<result_type>> state_;
+  std::shared_ptr<task_shared_state<result_type>> state_;
 };
 
 template<typename R>
@@ -273,13 +248,13 @@ public:
   template<typename F, typename std::enable_if<!std::is_same<task, F>::value>::type* = nullptr>
   explicit task(F&& callable)
     : callable_(std::forward<F>(callable)),
-      state_(new task_state<result_type>)
+      state_(new task_shared_state<result_type>)
   { }
 
   template<typename F, typename ...Args>
   explicit task(F&& callable, Args&&... args)
     : callable_(std::bind(std::forward<F>(callable), std::forward<Args>(args)...)),
-      state_(new task_state<result_type>)
+      state_(new task_shared_state<result_type>)
   { }
 
   task(const task&) = delete;
@@ -304,7 +279,13 @@ public:
   }
 
   task& operator=(const task&) = delete;
-  task& operator=(task&& other) = default;
+  task& operator=(task&& other)
+  {
+    using std::swap;
+    task tmp = std::move(other);
+    swap(tmp, *this);
+    return *this;
+  }
 
   task_handle<result_type> get_handle() const
   {
@@ -347,7 +328,7 @@ public:
 
 private:
   std::function<result_type()> callable_;
-  std::shared_ptr<task_state<result_type>> state_;
+  std::shared_ptr<task_shared_state<result_type>> state_;
   mutable std::atomic<bool> handle_acquired_{false};
 };
 
@@ -362,13 +343,13 @@ public:
   template<typename F, typename std::enable_if<!std::is_same<task, F>::value>::type* = nullptr>
   explicit task(F&& callable)
     : callable_(std::forward<F>(callable)),
-      state_(new task_state<result_type>)
+      state_(new task_shared_state<result_type>)
   { }
 
   template<typename F, typename ...Args>
   explicit task(F&& callable, Args&&... args) 
     : callable_(std::bind(std::forward<F>(callable), std::forward<Args>(args)...)),
-      state_(new task_state<result_type>)
+      state_(new task_shared_state<result_type>)
   { }
 
   task(const task&) = delete;
@@ -437,7 +418,7 @@ public:
 
 private:
   std::function<result_type()> callable_;
-  std::shared_ptr<task_state<result_type>> state_;
+  std::shared_ptr<task_shared_state<result_type>> state_;
   mutable std::atomic<bool> handle_acquired_{false};
 };
 
