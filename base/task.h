@@ -32,18 +32,34 @@ class task_state_result_storage
 public:
   typedef R result_type;
 
+  ~task_state_result_storage()
+  {
+    if (has_result)
+      destroy_storage();
+  }
+
   template<typename T>
   void set_result(T&& result)
   {
+    if (has_result)
+      destroy_storage();
+
     ::new (&result_) result_type{std::forward<T>(result)};
+    has_result = true;
   }
 
-  result_type get_result() const
+  result_type get_result()
   {
-    return std::move(*static_cast<const result_type*>(static_cast<const void*>(&result_)));
+    return std::move(*static_cast<result_type*>(static_cast<void*>(&result_)));
   }
 
 private:
+  void destroy_storage()
+  {
+    static_cast<result_type*>(static_cast<void*>(&result_))->~result_type();
+  }
+
+  bool has_result{false};
   typename std::aligned_storage<sizeof(result_type), alignof(result_type)>::type result_;
 };
 
