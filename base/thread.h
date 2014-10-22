@@ -5,6 +5,7 @@
 #include <chrono>
 #include <functional>
 #include <base/task.h>
+#include <base/chrono.h>
 #include <base/message_loop.h>
 #include <base/waitable_event.h>
 
@@ -25,13 +26,7 @@ public:
 
     std::thread::id id() const;
 
-    template<typename R>
-    void queue_task(task<R>&& task_,
-                    std::chrono::milliseconds delay = std::chrono::milliseconds{0})
-    {
-      assert(thread_.joinable());
-      loop_.queue_task(std::move(task_), delay);
-    }
+    void queue_task(callable action, time_delay delay = 0_ms);
 
 private:
     void exec();
@@ -44,7 +39,7 @@ private:
 template<typename R>
 task_handle<R> queue_task_with_handle(thread& thread_,
                                       task<R>&& task_,
-                                      std::chrono::milliseconds delay = std::chrono::milliseconds{0})
+                                      time_delay delay = 0_ms)
 {
   auto result = task_.get_handle();
   thread_.queue_task(std::move(task_), delay);
