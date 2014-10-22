@@ -1,20 +1,17 @@
 #include <boost/test/unit_test.hpp>
 
 #include <thread>
-#include <chrono>
 #include <functional>
 #include <vector>
-#include <base/task.h>
-#include <base/message_loop.h>
-#include <base/assert.h>
 #include <base/chrono.h>
+#include <base/message_loop.h>
 
 namespace {
 void publish(base::message_loop& loop, std::vector<int>& values)
 {
-  loop.queue_task(base::task<void>{[&]{ values.push_back(1); }}, 1000_ms);
-  loop.queue_task(base::task<void>{[&]{ values.push_back(2); }});
-  loop.queue_task(base::task<void>{[&loop]{loop.stop();}}, 1100_ms);
+  loop.queue_task([&]{ values.push_back(1); }, 1000_ms);
+  loop.queue_task([&]{ values.push_back(2); });
+  loop.queue_task([&loop]{loop.stop();}, 1100_ms);
 }
 
 void subscribe(base::message_loop& loop)
