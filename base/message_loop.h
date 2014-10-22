@@ -9,12 +9,18 @@
 #include <base/task.h>
 #include <base/queued_task.h>
 #include <base/chrono.h>
+#include <base/compatibility.h>
+#include <base/export.h>
 
 namespace base {
 // Tasks will be executed on the thread the start() method was invoked on.
-class message_loop FINAL
+class EXPORT_API message_loop FINAL
 {
 public:
+  message_loop() = default;
+  message_loop(const message_loop&) = delete;
+  message_loop& operator=(const message_loop&) = delete;
+
   void start();
   void stop();
 
