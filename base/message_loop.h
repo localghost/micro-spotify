@@ -24,22 +24,13 @@ public:
   void start();
   void stop();
 
-  template<typename R>
-  void queue_task(task<R>&& t)
-  {
-    queue_task_(queued_task{std::move(t)});
-  }
-
-  template<typename R>
-  void queue_task(task<R>&& t, time_delay delay)
-  {
-    queue_task_(queued_task{std::move(t), high_steady_clock::now() + delay});
-  }
+  void queue_task(callable action);
+  void queue_task(callable action, time_delay delay);
 
 private:
   void exec();
 
-  void queue_task_(queued_task&& t);
+  void queue_task_internal(queued_task t);
 
   std::atomic<bool> active_{false};
 

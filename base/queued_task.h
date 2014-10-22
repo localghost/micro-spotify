@@ -15,13 +15,11 @@ public:
   //      this would prevent current tasks to be delayed? but on the other hand
   //      if someone pushes task with when set to now() and the default then
   //      the latter one would preceed the first (client might not expect that)
-  template<typename R>
-  explicit queued_task(task<R>&& action)
+  explicit queued_task(callable action)
     : queued_task(std::move(action), high_steady_clock::now())
   { }
 
-  template<typename R>
-  queued_task(task<R>&& action, high_steady_clock::time_point w)
+  queued_task(callable action, high_steady_clock::time_point w)
     : action(std::move(action)),
       when(w)
   { }

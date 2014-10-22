@@ -32,11 +32,21 @@ void message_loop::stop()
         }));
 }
 
+void message_loop::queue_task(callable action)
+{
+  queue_task_internal(queued_task{std::move(action)});
+}
+
+void message_loop::queue_task(callable action, time_delay delay)
+{
+  queue_task_internal(queued_task{std::move(action), high_steady_clock::now() + delay});
+}
+
 // FIXME Consider running a task directly if it was added on the same thread
 //       on which message_loop is spinning and it has no delay; use case: 
 //       task is pushed on a loop and get() on its handle is called, in such
 //       case application blocks
-void message_loop::queue_task_(queued_task&& t)
+void message_loop::queue_task_internal(queued_task t)
 {
 //  if (!active_) return;
 //  LOG_DEBUG << "pushing a task on a thread: " << base::thread::current()->id();
