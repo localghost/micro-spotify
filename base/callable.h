@@ -32,8 +32,8 @@ private:
   };
 
 public:
-  template<typename T>
-  explicit callable(T&& t) : action{new model<T>{std::forward<T>(t)}} {}
+  template<typename T, typename std::enable_if<!std::is_same<callable, T>::value>::type* = nullptr>
+  callable(T&& t) : action{new model<T>{std::forward<T>(t)}} {}
 
   void operator()()
   {
