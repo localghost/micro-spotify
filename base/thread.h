@@ -2,9 +2,9 @@
 #define BASE_THREAD_H
 
 #include <thread>
-#include <chrono>
-#include <functional>
+#include <utility>
 #include <base/task.h>
+#include <base/callable.h>
 #include <base/chrono.h>
 #include <base/message_loop.h>
 #include <base/waitable_event.h>
@@ -36,6 +36,7 @@ private:
     waitable_event waiter_;
 };
 
+// TODO Move this to some task_helper header?
 template<typename R>
 task_handle<R> queue_task_with_handle(thread& thread_,
                                       task<R>&& task_,
