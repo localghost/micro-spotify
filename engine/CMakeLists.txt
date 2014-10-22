@@ -19,6 +19,8 @@ set(HDRS
    )
 
 set(SRCS
+    search_response.cc
+    search_response_impl.cc
     session.cc
     global_thread_manager.cc
    )

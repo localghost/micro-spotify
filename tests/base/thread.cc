@@ -16,8 +16,8 @@ BOOST_AUTO_TEST_CASE(TCBaseThread)
   {
     th.start();
     BOOST_SCOPE_EXIT_ALL(&th) { th.stop(); };
-    th.queue_task(base::task<void>{[&counter]{ ++counter; }});
-    th.queue_task(base::task<void>{[&counter]{ ++counter; }});
+    th.post_task(base::task<void>{[&counter]{ ++counter; }});
+    th.post_task(base::task<void>{[&counter]{ ++counter; }});
   }
   BOOST_CHECK_EQUAL(counter, 2);
 }

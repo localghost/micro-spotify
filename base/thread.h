@@ -26,7 +26,7 @@ public:
 
     std::thread::id id() const;
 
-    void queue_task(callable action, time_delay delay = 0_ms);
+    void post_task(callable action, time_delay delay = 0_ms);
 
 private:
     void exec();
@@ -38,12 +38,12 @@ private:
 
 // TODO Move this to some task_helper header?
 template<typename R>
-task_handle<R> queue_task_with_handle(thread& thread_,
+task_handle<R> post_task_with_handle(thread& thread_,
                                       task<R>&& task_,
                                       time_delay delay = 0_ms)
 {
   auto result = task_.get_handle();
-  thread_.queue_task(std::move(task_), delay);
+  thread_.post_task(std::move(task_), delay);
   return result;
 }
 }

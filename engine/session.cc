@@ -67,17 +67,17 @@ session::session(configuration& /*config*/)
   session_config_.user_agent = application_name;
   session_config_.callbacks = &session_callbacks_;
 
-  base::queue_task_with_handle(spotify_thread(),
+  base::post_task_with_handle(spotify_thread(),
                                base::make_task(&session::create_session, this)).get();
   // process_events_handle_ can't be assigned directly on any thread but spotify_thread
   // since it is referenced in notify_main_thread which can be called first
   auto t = base::make_task([this]
       { 
-        process_events_handle_ = base::queue_task_with_handle(
+        process_events_handle_ = base::post_task_with_handle(
           spotify_thread(), base::make_task(&session::process_events, this));
       }
   );
-  spotify_thread().queue_task(std::move(t));
+  spotify_thread().post_task(std::move(t));
 }
 
 session::~session()
@@ -90,7 +90,7 @@ session::~session()
 
   // posting the cancellation of the process_events to spotify_thread so that it
   // won't be called in the middle of process_events making it useless
-  base::queue_task_with_handle(spotify_thread(),
+  base::post_task_with_handle(spotify_thread(),
                                base::make_task([this]
                                  { 
                                    if (process_events_handle_.is_valid())
@@ -98,14 +98,14 @@ session::~session()
                                  }
                                )).get();
 
-  base::queue_task_with_handle(spotify_thread(),
+  base::post_task_with_handle(spotify_thread(),
                                base::make_task(&sp_session_release, session_)).get();
 
   // assuming that after sp_session_release() notify_main_thread callback will not be called
   // so it is safe to use the handle; posting cancellation to the spotify_thread for the same
   // reasons as in case of process_events_handle_ ... but is it true? (maybe notify_main_thread
   // increases reference counter and sp_session_release() does not destroy the session at all)
-  base::queue_task_with_handle(spotify_thread(),
+  base::post_task_with_handle(spotify_thread(),
                                base::make_task([this]
                                  {
                                    if (notify_main_thread_handle_.is_valid())
@@ -116,7 +116,7 @@ session::~session()
 
 void session::log_in()
 {
-  spotify_thread().queue_task(base::make_task(&sp_session_login,
+  spotify_thread().post_task(base::make_task(&sp_session_login,
                                               session_,
                                               username,
                                               password,
@@ -126,13 +126,13 @@ void session::log_in()
 
 void session::log_out()
 {
-  spotify_thread().queue_task(base::make_task(&sp_session_logout, session_));
+  spotify_thread().post_task(base::make_task(&sp_session_logout, session_));
 }
 
 //playlist_container session::get_playlist_container()
 //{
 //  sp_session_playlistcontainer* container =
-//      base::queue_task_with_handle(spotify_thread(),
+//      base::post_task_with_handle(spotify_thread(),
 //                                   base::make_task(&sp_session_playlistcontainer, session_)).get();
 //  if (!container)
 //    THROW(spotify_error{}); // inject error code
@@ -182,7 +182,7 @@ void session::search(search_request request, search_completed_callback callback)
 
       });
   // FIXME make it cancellable
-  spotify_thread().queue_task(std::move(t));
+  spotify_thread().post_task(std::move(t));
 }
 
 signals::connection session::connect_logged_in(const logged_in_slot_type& slot)
@@ -223,7 +223,7 @@ void session::notify_main_thread(sp_session* session_)
 {
   assert(session_);
   session* self = static_cast<session*>(sp_session_userdata(session_));
-  self->notify_main_thread_handle_ = base::queue_task_with_handle(spotify_thread(),
+  self->notify_main_thread_handle_ = base::post_task_with_handle(spotify_thread(),
       base::make_task(static_cast<void(session::*)()>(&session::notify_main_thread), self));
 }
 
@@ -245,7 +245,7 @@ int session::music_delivery(sp_session* session_,
   f.rate = static_cast<unsigned>(format->sample_rate);
 
   // FIXME add support for cancellation
-  audio_thread().queue_task(base::make_task([](session* session_, frame f)
+  audio_thread().post_task(base::make_task([](session* session_, frame f)
       {
         // FIXME if I move here then it will work only for the first
         //       callback
@@ -291,7 +291,7 @@ void session::process_events()
   int timeout = 0;
   sp_session_process_events(session_, &timeout);
   process_events_handle_
-      = base::queue_task_with_handle(spotify_thread(),
+      = base::post_task_with_handle(spotify_thread(),
                                      base::make_task(&session::process_events, this),
                                      std::chrono::milliseconds{timeout});
 }

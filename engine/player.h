@@ -20,7 +20,7 @@ public:
 
   void play(sp_track* track)
   {
-    spotify_thread().queue_task(base::make_task([this, track]
+    spotify_thread().post_task(base::make_task([this, track]
           {
             sp_session_player_load(session_, track);
             sp_session_player_play(session_, true);

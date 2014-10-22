@@ -9,9 +9,9 @@
 namespace {
 void publish(base::message_loop& loop, std::vector<int>& values)
 {
-  loop.queue_task([&]{ values.push_back(1); }, 1000_ms);
-  loop.queue_task([&]{ values.push_back(2); });
-  loop.queue_task([&loop]{loop.stop();}, 1100_ms);
+  loop.post_task([&]{ values.push_back(1); }, 1000_ms);
+  loop.post_task([&]{ values.push_back(2); });
+  loop.post_task([&loop]{loop.stop();}, 1100_ms);
 }
 
 void subscribe(base::message_loop& loop)

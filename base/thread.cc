@@ -54,10 +54,10 @@ std::thread::id thread::id() const
   return thread_.get_id();
 }
 
-void thread::queue_task(callable action, time_delay delay)
+void thread::post_task(callable action, time_delay delay)
 {
   BOOST_ASSERT(thread_.joinable());
-  loop_.queue_task(std::move(action), delay);
+  loop_.post_task(std::move(action), delay);
 }
 
 void thread::exec()

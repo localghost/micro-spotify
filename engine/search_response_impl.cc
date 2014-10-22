@@ -23,7 +23,7 @@ std::string search_response_impl::query()
         const char* query = sp_search_query(search);
         return (query ? query : "");
       });
-  return base::queue_task_with_handle(spotify_thread(), std::move(t)).get();
+  return base::post_task_with_handle(spotify_thread(), std::move(t)).get();
 }
 
 std::string search_response_impl::did_you_mean() 
@@ -47,7 +47,7 @@ sp_track* search_response_impl::track(size_t num)
           THROW(base::out_of_bounds_error{});
         return result;
       });
-  return base::queue_task_with_handle(spotify_thread(), std::move(t)).get();
+  return base::post_task_with_handle(spotify_thread(), std::move(t)).get();
 }
 
 size_t search_response_impl::total_tracks()

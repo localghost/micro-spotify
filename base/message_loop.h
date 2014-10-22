@@ -24,13 +24,13 @@ public:
   void start();
   void stop();
 
-  void queue_task(callable action);
-  void queue_task(callable action, time_delay delay);
+  void post_task(callable action);
+  void post_task(callable action, time_delay delay);
 
 private:
   void exec();
 
-  void queue_task_internal(queued_task t);
+  void post_task_internal(queued_task t);
 
   std::atomic<bool> active_{false};
 
