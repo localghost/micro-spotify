@@ -16,6 +16,9 @@ void message_loop::start()
   exec();
 }
 
+// FIXME this method should only set active_ to false but there should be other
+//       method for clearing the message loop (or stop_and_clear()), or maybe stop
+//       should be synchronous
 void message_loop::stop()
 {
 // FIXME https://github.com/localghost/micro-spotify/wiki/Architecture#message-loop
