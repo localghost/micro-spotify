@@ -3,10 +3,11 @@
 
 #include <ostream>
 #include <sstream>
+#include <base/export.h>
 
 namespace base {
 namespace log {
-enum class severity
+enum class EXPORT_API severity
 {
     Info,
     Debug,
@@ -14,7 +15,7 @@ enum class severity
     Error
 };
 
-class message
+class EXPORT_API message
 {
 public:
     message(severity severity_,
@@ -29,11 +30,11 @@ private:
     std::ostringstream oss;
 };
 
-struct ostream_voidifier
+struct EXPORT_API ostream_voidifier
 {
   void operator&(const std::ostream&) { }
 };
-extern ostream_voidifier voidifier; 
+extern ostream_voidifier voidifier EXPORT_API; 
 }
 }
 

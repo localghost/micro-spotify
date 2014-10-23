@@ -11,6 +11,7 @@
 #include <base/thread.h>
 #include <base/exception.h>
 #include <base/request_map.h>
+#include <base/export.h>
 #include <engine/configuration.h>
 #include <engine/search_request.h>
 #include <engine/search_response.h>
@@ -21,7 +22,7 @@ namespace engine {
 typedef boost::error_info<struct spotify_error_info_t, sp_error> spotify_error_info;
 EXCEPTION_TYPE(spotify_error);
 
-class session FINAL
+class EXPORT_API session FINAL
 {
 private:
   typedef boost::signals2::signal<void(sp_error)> logged_in_signal_type;

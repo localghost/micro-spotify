@@ -17,6 +17,7 @@ endif (${CMAKE_COMPILER_IS_GNUCXX})
 add_definitions("-Wall")
 add_definitions("-pedantic")
 add_definitions("-Wextra")
+add_definitions("-fvisibility=hidden")
 
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 

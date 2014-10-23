@@ -3,11 +3,12 @@
 
 #include <memory>
 #include <libspotify/api.h>
+#include <base/export.h>
 
 namespace engine {
 class search_response_impl;
 
-class search_response
+class EXPORT_API search_response
 {
 public:
   std::string query();

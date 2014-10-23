@@ -7,9 +7,10 @@
 #include <base/chrono.h>
 #include <base/message_loop.h>
 #include <base/waitable_event.h>
+#include <base/export.h>
 
 namespace base {
-class thread
+class EXPORT_API thread
 {
 public:
     static thread* current();

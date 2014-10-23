@@ -2,9 +2,10 @@
 #define ENGINE_SEARCH_REQUEST_H
 
 #include <string>
+#include <base/export.h>
 
 namespace engine {
-struct search_request
+struct EXPORT_API search_request
 {
   std::string query;
   

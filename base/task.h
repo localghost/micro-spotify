@@ -15,6 +15,7 @@
 #include <base/compatibility.h>
 #include <base/callable.h>
 #include <base/thread.h>
+#include <base/export.h>
 
 namespace base {
 template<typename> class task;
@@ -172,7 +173,7 @@ public:
 }; 
 
 template<typename R>
-class task_handle FINAL
+class EXPORT_API task_handle FINAL
 {
 public:
   typedef R result_type;
@@ -243,7 +244,7 @@ private:
   struct base
   {
     virtual ~base() {}
-    virtual callable move_out() = 0;
+    virtual callable move_task() = 0;
   };
 
   template<typename T>
@@ -251,7 +252,7 @@ private:
   {
     explicit model(T t) : callable_{std::move(t)} {}
 
-    callable move_out()
+    callable move_task()
     {
       return std::move(callable_);
     }
@@ -268,9 +269,9 @@ public:
     return m->callable_;
   }
 
-  callable move_out()
+  callable move_task()
   {
-    return ptr_->move_out();
+    return ptr_->move_task();
   }
 
   bool is_set() const
@@ -283,7 +284,7 @@ private:
 };
 
 template<typename R>
-class task FINAL
+class EXPORT_API task FINAL
 {
 public:
   typedef R result_type;
@@ -374,7 +375,7 @@ private:
   void post_continuation()
   {
     if (continuation_.is_set())
-      thread::current()->post_task(continuation_.move_out());
+      thread::current()->post_task(continuation_.move_task());
   }
 
   continuation continuation_;
@@ -384,7 +385,7 @@ private:
 };
 
 template<>
-class task<void> FINAL
+class EXPORT_API task<void> FINAL
 {
 public:
   typedef void result_type;
@@ -474,15 +475,17 @@ private:
   void post_continuation()
   {
     if (continuation_.is_set())
-      thread::current()->post_task(continuation_.move_out());
+      thread::current()->post_task(continuation_.move_task());
   }
 
   continuation continuation_;
   std::function<result_type()> callable_;
   std::shared_ptr<task_shared_state<result_type>> state_;
-  mutable std::atomic<bool> handle_acquired_{false};
+  mutable bool handle_acquired_{false};
 };
 
+template<typename F, typename ...Args>
+task<typename std::result_of<F(Args...)>::type> make_task(F&& f, Args&&... args) EXPORT_API;
 template<typename F, typename ...Args>
 task<typename std::result_of<F(Args...)>::type> make_task(F&& f, Args&&... args)
 {
@@ -491,6 +494,10 @@ task<typename std::result_of<F(Args...)>::type> make_task(F&& f, Args&&... args)
 }
 
 // TODO Move this to some task_helper header?
+template<typename R>
+task_handle<R> post_task_with_handle(thread& thread_,
+                                      task<R>&& task_,
+                                      time_delay delay = 0_ms) EXPORT_API;
 template<typename R>
 task_handle<R> post_task_with_handle(thread& thread_,
                                       task<R>&& task_,
