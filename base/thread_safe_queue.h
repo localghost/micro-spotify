@@ -1,41 +1,30 @@
 #ifndef THREAD_SAFE_QUEUE_H
 #define THREAD_SAFE_QUEUE_H
 
-#include <mutex>
+#include <algorithm>
 #include <condition_variable>
-#include <queue>
-#include <base/task.h>
+#include <mutex>
+#include <vector>
+#include <base/queued_task.h>
 
 namespace base {
 // FIXME This is a very primitive version of a queue which uses one
 //       mutex for the whole queue (so the lock contention is highly
 //       possible). Strive for a lock-free queue in the first release.
 
-// Requirements: T is MoveConstructible or CopyConstructible
-template <typename T>
 class thread_safe_queue
 {
 public:
-  // FIXME Might be necessary to allow conversions  
-  template<typename U,
-           typename std::enable_if<std::is_same<T, U>::value>::type* = nullptr>
-  void push(U&& value)
+  // TODO utilise perfect fwd?
+  void push(queued_task t)
   {
     {
       std::lock_guard<std::mutex> guard{lock_};
-      queue_.push(std::forward<U>(value));
+      queue_.push(std::move(t));
+      std::push_heap(queue_.begin(), queue_.end());
     }
     cv_.notify_one();
   }
-
-//  void push(T&& value)
-//  {
-//    {
-//      std::lock_guard<std::mutex> guard{lock_};
-//      queue_.push(std::move(value));
-//    }
-//    cv_.notify_one();
-//  }
 
   void pop(T& result)
   {
@@ -62,7 +51,7 @@ public:
   }
 
 private:
-  std::queue<T> queue_;
+  std::vector<queued_task> queue_;
   std::mutex lock_;
   std::condition_variable cv_;
 };
