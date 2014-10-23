@@ -9,7 +9,7 @@ BOOST_AUTO_TEST_SUITE(TSBaseWaitableEvent)
 
 /// Tests whether waitable event works for a single waiter.
 /// Uses synchronisation via timeout to test only a single instance
-/// of a waitable_event object.
+/// of a @c waitable_event object.
 BOOST_AUTO_TEST_CASE(TCBaseWaitableEvent1)
 {
   unsigned counter = 0;
@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE(TCBaseWaitableEvent1)
 }
 
 /// Tests whether waitable event works for a single waiter
-/// Uses synchronisation via two instances of waitable_event.
+/// Uses synchronisation via two instances of @c waitable_event.
 BOOST_AUTO_TEST_CASE(TCBaseWaitableEvent2)
 {
   unsigned counter = 0;
@@ -50,8 +50,8 @@ BOOST_AUTO_TEST_CASE(TCBaseWaitableEvent2)
   BOOST_CHECK_EQUAL(counter, 1);
 }
 
-/// Tests whether calling signal() before wait() does not cause
-/// the waiting thread to wait for ever.
+/// Tests whether calling @c signal() before @c wait() does not cause
+/// the waiting thread to wait forever.
 BOOST_AUTO_TEST_CASE(TCBaseWaitableEvent3)
 {
   unsigned counter = 0;
