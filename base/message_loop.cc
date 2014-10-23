@@ -22,14 +22,14 @@ void message_loop::stop()
 //
 //  active_ = false;
 
-  post_task(make_task([this]
+  post_task([this]
         {
           {
             std::lock_guard<std::mutex> guard{mutex_};
             queue_.clear();
           }
           active_ = false;
-        }));
+        });
 }
 
 void message_loop::post_task(callable action)
@@ -50,7 +50,6 @@ void message_loop::post_queued_task(queued_task t)
 {
 //  if (!active_) return;
 //  LOG_DEBUG << "pushing a task on a thread: " << base::thread::current()->id();
-  LOG_DEBUG << "pushing a task on a thread";
 
   // FIXME see https://github.com/localghost/micro-spotify/wiki/Architecture:-MessageLoop#adding-task-to-not-running-message-loop 
   bool notify_waiter = false;

@@ -6,7 +6,6 @@
 #include <mutex>
 #include <atomic>
 #include <utility>
-#include <base/task.h>
 #include <base/queued_task.h>
 #include <base/chrono.h>
 #include <base/compatibility.h>

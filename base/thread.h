@@ -3,7 +3,6 @@
 
 #include <thread>
 #include <utility>
-#include <base/task.h>
 #include <base/callable.h>
 #include <base/chrono.h>
 #include <base/message_loop.h>
@@ -35,17 +34,6 @@ private:
     message_loop loop_;
     waitable_event waiter_;
 };
-
-// TODO Move this to some task_helper header?
-template<typename R>
-task_handle<R> post_task_with_handle(thread& thread_,
-                                      task<R>&& task_,
-                                      time_delay delay = 0_ms)
-{
-  auto result = task_.get_handle();
-  thread_.post_task(std::move(task_), delay);
-  return result;
-}
 }
 
 #endif
