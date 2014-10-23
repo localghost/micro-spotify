@@ -3,9 +3,10 @@
 
 #include <cstddef>
 #include <base/thread.h>
+#include <base/export.h>
 
 namespace engine {
-enum struct global_thread_id : std::size_t
+enum struct EXPORT_API global_thread_id : std::size_t
 {
   main_thread = 0, //ui_thread - TODO
   spotify_thread,
@@ -13,7 +14,7 @@ enum struct global_thread_id : std::size_t
   thread_count
 };
 
-class global_thread_manager FINAL
+class EXPORT_API global_thread_manager FINAL
 {
 public:
   static base::thread& get_thread(global_thread_id id);

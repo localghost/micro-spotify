@@ -23,6 +23,8 @@ set(SRCS
     search_response_impl.cc
     session.cc
     global_thread_manager.cc
+    search_response.cc
+    search_response_impl.cc
    )
 
 add_library(${TARGET_ENGINE} SHARED ${SRCS})

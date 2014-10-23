@@ -21,7 +21,7 @@ enum struct EXPORT_API task_error_code
   already_called,
   handle_already_acquired
 };
-typedef ::boost::error_info<struct task_error_code_tag, task_error_code> task_error_info;
+typedef ::boost::error_info<struct EXPORT_API task_error_code_tag, task_error_code> task_error_info;
 EXCEPTION_TYPE(task_error);
 
 template<typename R>
@@ -308,7 +308,7 @@ task_handle<R> post_task_with_handle(thread& thread_,
 template<typename R>
 task_handle<R> post_task_with_handle(thread& thread_,
                                       task<R>&& task_,
-                                      time_delay delay = 0_ms)
+                                      time_delay delay)
 {
   auto result = task_.get_handle();
   thread_.post_task(std::move(task_), delay);

@@ -18,6 +18,7 @@ set(SRCS
     message_loop.cc
     thread.cc
     waitable_event.cc
+    task_queue.cc
    )
 
 add_library(${TARGET_BASE} SHARED ${SRCS})
