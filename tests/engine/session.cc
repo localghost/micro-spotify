@@ -162,7 +162,9 @@ BOOST_AUTO_TEST_CASE(TCEngineSessionLogOut)
     request.query = "eminem";
     request.artist_count  = 5;
     
-    s.search(std::move(request), [](engine::search_response response) { LOG_INFO << "GOT IT - the query was: " << response.query(); });
+    auto p = s.get_player();
+    s.connect_search_completed([&p](engine::search_response response) { LOG_INFO << "GOT IT - the query was: " << response.query(); p.play(response.track(1)); });
+    s.search(std::move(request));
 
     {
       std::unique_lock<std::mutex> guard{m};

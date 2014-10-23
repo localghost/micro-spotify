@@ -55,6 +55,8 @@ session::session(configuration& /*config*/)
   // setup configuration
 //  std::string cache_location = config.cache.value();
 
+  cb_thread.start();
+
   std::memset(&session_config_, 0, sizeof(session_config_));
   session_config_.api_version = SPOTIFY_API_VERSION;
   session_config_.userdata = this;
@@ -112,6 +114,7 @@ session::~session()
                                      notify_main_thread_handle_.cancel();
                                  }
                                )).get();
+  cb_thread.stop();
 }
 
 void session::log_in()
@@ -145,23 +148,29 @@ player session::get_player()
   return player{session_};
 }
 
-void session::search(search_request request, search_completed_callback callback)
+void session::search(search_request request)
 {
-  auto t = base::make_task([this, request, callback]() mutable
-      {
-        // only this assures that sp_search will be added to search_requests
-        // before its presence is checked in the search_completed callback
-        // without this search_completed could be processed before sp_search is
-        // added to search_requests
-        // FIXME This causes the lock to be held longer than necessary, mark
-        //       each request with an id and pass that id to callback; guard
-        //       only insert() and move insert() before sp_search_create()
-        search_request_data* data = new search_request_data{this, std::move(callback)};
-        std::unique_ptr<search_request_data> data_ptr{data};
-        {
-          std::lock_guard<std::mutex> guard{search_mutex};
-          search_requests.push_back(std::move(data_ptr));
-        }
+//  auto t = base::make_task([this, request]() mutable
+//      {
+//        // FIXME store it somewhere so that if search_completed does not fire
+//        //       it still should be released!
+//        //       According to an example in libspotify 
+//        //       (https://developer.spotify.com/docs/libspotify/12.1.51/search_8c-example.html#a18)
+//        //       it is enough to release in callback.
+//        //       But what if search is cancelled? Will sp_search_release() call search_completed
+//        //       with search error? (TODO test this)
+//        sp_search* s = sp_search_create(session_, request.query.c_str(),
+//                                        static_cast<int>(request.track_offset),
+//                                        static_cast<int>(request.track_count),
+//                                        static_cast<int>(request.album_offset),
+//                                        static_cast<int>(request.album_count),
+//                                        static_cast<int>(request.artist_offset),
+//                                        static_cast<int>(request.artist_count),
+//                                        static_cast<int>(request.playlist_offset),
+//                                        static_cast<int>(request.playlist_count),
+//                                        SP_SEARCH_STANDARD, &session::search_completed, this);
+//      });
+
         // FIXME store it somewhere so that if search_completed does not fire
         //       it still should be released!
         //       According to an example in libspotify 
@@ -169,18 +178,16 @@ void session::search(search_request request, search_completed_callback callback)
         //       it is enough to release in callback.
         //       But what if search is cancelled? Will sp_search_release() call search_completed
         //       with search error? (TODO test this)
-        sp_search* s = sp_search_create(session_, request.query.c_str(),
-                                        static_cast<int>(request.track_offset),
-                                        static_cast<int>(request.track_count),
-                                        static_cast<int>(request.album_offset),
-                                        static_cast<int>(request.album_count),
-                                        static_cast<int>(request.artist_offset),
-                                        static_cast<int>(request.artist_count),
-                                        static_cast<int>(request.playlist_offset),
-                                        static_cast<int>(request.playlist_count),
-                                        SP_SEARCH_STANDARD, &session::search_completed, data);
-
-      });
+  auto t = base::make_task(&sp_search_create, session_, request.query.c_str(),
+                           static_cast<int>(request.track_offset),
+                           static_cast<int>(request.track_count),
+                           static_cast<int>(request.album_offset),
+                           static_cast<int>(request.album_count),
+                           static_cast<int>(request.artist_offset),
+                           static_cast<int>(request.artist_count),
+                           static_cast<int>(request.playlist_offset),
+                           static_cast<int>(request.playlist_count),
+                           SP_SEARCH_STANDARD, &session::search_completed, this);
   // FIXME make it cancellable
   spotify_thread().post_task(std::move(t));
 }
@@ -200,6 +207,11 @@ signals::connection session::connect_frames_delivered(const frames_delivered_slo
   return on_frames_delivered.connect(slot);
 }
 
+signals::connection session::connect_search_completed(const search_completed_slot_type& slot)
+{
+  return on_search_completed.connect(slot);
+}
+
 void session::log_message(sp_session* session_, const char* message)
 {
   LOG_DEBUG << "Message from spotify for [" << session_ << "] " << message;
@@ -208,20 +220,20 @@ void session::log_message(sp_session* session_, const char* message)
 void session::logged_in(sp_session* session_, sp_error error)
 {
   session* self = static_cast<session*>(sp_session_userdata(session_));
-  assert(self);
-  self->on_logged_in(error);
+  BOOST_ASSERT(self);
+  self->cb_thread.post_task(base::make_task(std::ref(self->on_logged_in), error));
 }
 
 void session::logged_out(sp_session* session_)
 {
   session* self = static_cast<session*>(sp_session_userdata(session_));
   assert(self);
-  self->on_logged_out();
+  self->cb_thread.post_task(base::make_task(std::ref(self->on_logged_out)));
 }
 
 void session::notify_main_thread(sp_session* session_)
 {
-  assert(session_);
+  BOOST_ASSERT(session_);
   session* self = static_cast<session*>(sp_session_userdata(session_));
   self->notify_main_thread_handle_ = base::post_task_with_handle(spotify_thread(),
       base::make_task(static_cast<void(session::*)()>(&session::notify_main_thread), self));
@@ -235,7 +247,7 @@ int session::music_delivery(sp_session* session_,
   LOG_DEBUG << "here";
 
   session* self = static_cast<session*>(sp_session_userdata(session_));
-  assert(self);
+  BOOST_ASSERT(self);
 
   frame f;
   f.samples = static_cast<unsigned>(num_frames);
@@ -245,12 +257,7 @@ int session::music_delivery(sp_session* session_,
   f.rate = static_cast<unsigned>(format->sample_rate);
 
   // FIXME add support for cancellation
-  audio_thread().post_task(base::make_task([](session* session_, frame f)
-      {
-        // FIXME if I move here then it will work only for the first
-        //       callback
-        session_->on_frames_delivered(f);
-      }, self, f));
+  audio_thread().post_task(base::make_task(std::ref(self->on_frames_delivered), std::move(f)));
 
   return num_frames;
 }
@@ -258,20 +265,7 @@ int session::music_delivery(sp_session* session_,
 void session::search_completed(sp_search* result, void* data)
 {
   // TODO add synchronisation or go through a private thread
-  assert(data);
-  std::unique_ptr<search_request_data> request_data{static_cast<search_request_data*>(data)};
-  {
-    std::lock_guard<std::mutex> guard{request_data->self->search_mutex};
-    auto it = std::find(request_data->self->search_requests.begin(),
-                        request_data->self->search_requests.end(),
-                        request_data);
-    if (request_data->self->search_requests.end() != it)
-    {
-      it->release();
-      request_data->self->search_requests.erase(it);
-    }
-    // FIXME check if erase() found the element to be erased
-  }
+  BOOST_ASSERT_MSG(data, "Search completed user data is null");
 
   if (SP_ERROR_OK != sp_search_error(result))
   {
@@ -281,8 +275,12 @@ void session::search_completed(sp_search* result, void* data)
     return;
   }
 
-  // TODO This should go through the task scheduler
-  request_data->callback(search_response{new search_response_impl{result}});
+  session* self = static_cast<session*>(data);
+  // don't pass bare sp_search* to the task so that it is released even
+  // if the task is not executed
+  search_response response{new search_response_impl{result}};
+
+  self->cb_thread.post_task(base::make_task(std::ref(self->on_search_completed), std::move(response)));
 }
 
 void session::process_events()

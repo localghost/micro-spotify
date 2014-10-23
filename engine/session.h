@@ -28,14 +28,13 @@ private:
   typedef boost::signals2::signal<void(sp_error)> logged_in_signal_type;
   typedef boost::signals2::signal<void()> logged_out_signal_type;
   typedef boost::signals2::signal<void(frame)> frames_delivered_signal_type;
-
+  typedef boost::signals2::signal<void(search_response)> search_completed_signal_type;
 
 public:
   typedef logged_in_signal_type::slot_type logged_in_slot_type;
   typedef logged_out_signal_type::slot_type logged_out_slot_type;
   typedef frames_delivered_signal_type::slot_type frames_delivered_slot_type;
-
-  typedef std::function<void(search_response)> search_completed_callback;
+  typedef search_completed_signal_type::slot_type search_completed_slot_type;
 
   explicit session(configuration& config);
   ~session();
@@ -45,19 +44,14 @@ public:
 
   //    playlist_container get_playlist_container();
   player get_player();
-  void search(search_request request, search_completed_callback callback);
+  void search(search_request request);
 
   boost::signals2::connection connect_logged_in(const logged_in_slot_type& slot);
   boost::signals2::connection connect_logged_out(const logged_out_slot_type& slot);
   boost::signals2::connection connect_frames_delivered(const frames_delivered_slot_type& slot);
+  boost::signals2::connection connect_search_completed(const search_completed_slot_type& slot);
 
 private:
-  struct search_request_data
-  {
-    session* self;
-    search_completed_callback callback;
-  };
-
   static sp_session_callbacks initialize_session_callbacks();
 
   static void log_message(sp_session* session_, const char* message);
@@ -84,12 +78,9 @@ private:
   logged_in_signal_type on_logged_in;
   logged_out_signal_type on_logged_out;
   frames_delivered_signal_type on_frames_delivered;
+  search_completed_signal_type on_search_completed;
 
-//  search_requests_type search_requests;
-  //    std::map<sp_search*, search_request> search_requests;
-  // FIXME Use either hash table or request_map
-  std::vector<std::unique_ptr<search_request_data>> search_requests;
-  std::mutex search_mutex;
+  base::thread cb_thread;
 };
 }
 
