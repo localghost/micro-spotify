@@ -30,7 +30,7 @@ public:
 private:
   void exec();
 
-  void post_task_internal(queued_task t);
+  void post_queued_task(queued_task t);
 
   std::atomic<bool> active_{false};
 
