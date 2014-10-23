@@ -23,6 +23,12 @@ public:
       when(w)
   { }
 
+  queued_task(const queued_task&) noexcept = default;
+  queued_task(queued_task&&) noexcept = default;
+
+  queued_task& operator=(const queued_task&) noexcept = default;
+  queued_task& operator=(queued_task&&) noexcept = default;
+
   friend bool operator<(const queued_task& x, const queued_task& y)
   {
     return x.when > y.when;
