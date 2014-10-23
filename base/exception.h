@@ -2,21 +2,16 @@
 #define BASE_EXCEPTION_H
 
 #include <string>
-#include <sstream>
 #include <exception>
 #include <boost/exception/all.hpp>
-#include <base/inspect.h>
+#include <base/export.h>
 
 namespace base {
 namespace error_info {
-#if SUPPORTED(CPP11)
 using message = boost::error_info<struct error_info_message_, std::string>;
-#else
-typedef boost::error_info<struct error_info_message_, std::string> message;
-#endif
 }
 
-struct exception : virtual std::exception, virtual boost::exception {};
+struct EXPORT_API exception : virtual std::exception, virtual boost::exception {};
 
 void verbose_terminate_handler();
 }
