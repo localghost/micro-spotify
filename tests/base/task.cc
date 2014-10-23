@@ -259,4 +259,21 @@ BOOST_AUTO_TEST_CASE(TCMakeTask4)
   BOOST_CHECK_EQUAL(i, 42);
 }
 
+BOOST_AUTO_TEST_CASE(TCContinuation1)
+{
+  int counter = 0;
+  auto inc_counter = [&counter]{++counter;};
+
+  // TODO Use main thread when it is implemented
+  base::thread th;
+  th.start();
+  auto t = base::make_task(inc_counter);
+  auto handle = t.then(inc_counter).then(inc_counter).then(inc_counter).get_handle();
+  th.post_task(std::move(t));
+  handle.wait();
+  th.stop();
+
+  BOOST_CHECK_EQUAL(counter, 4);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

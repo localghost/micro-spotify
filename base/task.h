@@ -13,6 +13,8 @@
 #include <base/assert.h>
 #include <base/exception.h>
 #include <base/compatibility.h>
+#include <base/callable.h>
+#include <base/thread.h>
 
 namespace base {
 template<typename> class task;
@@ -235,6 +237,51 @@ private:
   std::shared_ptr<task_shared_state<result_type>> state_;
 };
 
+class continuation
+{
+private:
+  struct base
+  {
+    virtual ~base() {}
+    virtual callable move_out() = 0;
+  };
+
+  template<typename T>
+  struct model : base
+  {
+    explicit model(T t) : callable_{std::move(t)} {}
+
+    callable move_out()
+    {
+      return std::move(callable_);
+    }
+
+    T callable_;
+  };
+
+public:
+  template<typename T>
+  T& set_task(T task)
+  {
+    model<T>* m = new model<T>{std::move(task)};
+    ptr_.reset(m);
+    return m->callable_;
+  }
+
+  callable move_out()
+  {
+    return ptr_->move_out();
+  }
+
+  bool is_set() const
+  {
+    return ptr_.get() != nullptr;
+  }
+
+private:
+  std::unique_ptr<base> ptr_;
+};
+
 template<typename R>
 class task FINAL
 {
@@ -260,6 +307,7 @@ public:
   task(const task&) = delete;
   task(task&& other)
   {
+    continuation_ = std::move(other.continuation_);
     callable_ = std::move(other.callable_);
     state_ = std::move(other.state_);
     handle_acquired_.store(handle_acquired_.load(std::memory_order_relaxed), std::memory_order_relaxed); 
@@ -316,6 +364,7 @@ public:
       try
       {
         state_->set_result(callable_());
+        post_continuation();
       }
       catch (...)
       {
@@ -326,7 +375,21 @@ public:
     }
   }
 
+  template<typename F>
+  task<typename std::result_of<F()>::type>& then(F&& action)
+  {
+    task<typename std::result_of<F()>::type> t = std::forward<F>(action);
+    return continuation_.set_task(std::move(t));
+  }
+
 private:
+  void post_continuation()
+  {
+    if (continuation_.is_set())
+      thread::current()->post_task(continuation_.move_out());
+  }
+
+  continuation continuation_;
   std::function<result_type()> callable_;
   std::shared_ptr<task_shared_state<result_type>> state_;
   mutable std::atomic<bool> handle_acquired_{false};
@@ -355,6 +418,7 @@ public:
   task(const task&) = delete;
   task(task&& other)
   {
+    continuation_ = std::move(other.continuation_);
     callable_ = std::move(other.callable_);
     state_ = std::move(other.state_);
     handle_acquired_.store(handle_acquired_.load(std::memory_order_relaxed), std::memory_order_relaxed); 
@@ -406,6 +470,7 @@ public:
       try
       {
         callable_();
+        post_continuation();
       }
       catch (...)
       {
@@ -416,7 +481,21 @@ public:
     }
   }
 
+  template<typename F>
+  task<typename std::result_of<F()>::type>& then(F&& action)
+  {
+    task<typename std::result_of<F()>::type> t{std::forward<F>(action)};
+    return continuation_.set_task(std::move(t));
+  }
+
 private:
+  void post_continuation()
+  {
+    if (continuation_.is_set())
+      thread::current()->post_task(continuation_.move_out());
+  }
+
+  continuation continuation_;
   std::function<result_type()> callable_;
   std::shared_ptr<task_shared_state<result_type>> state_;
   mutable std::atomic<bool> handle_acquired_{false};
@@ -427,6 +506,17 @@ task<typename std::result_of<F(Args...)>::type> make_task(F&& f, Args&&... args)
 {
   typedef typename std::result_of<F(Args...)>::type result_type;
   return task<result_type>{std::forward<F>(f), std::forward<Args>(args)...};
+}
+
+// TODO Move this to some task_helper header?
+template<typename R>
+task_handle<R> post_task_with_handle(thread& thread_,
+                                      task<R>&& task_,
+                                      time_delay delay = 0_ms)
+{
+  auto result = task_.get_handle();
+  thread_.post_task(std::move(task_), delay);
+  return result;
 }
 }
 
