@@ -179,10 +179,10 @@ public:
 
   task_handle() = default;
   task_handle(const task_handle&) = delete;
-  task_handle(task_handle&&) = default;
+  task_handle(task_handle&&) noexcept = default;
 
   void operator=(const task_handle&) = delete;
-  task_handle& operator=(task_handle&&) = default;
+  task_handle& operator=(task_handle&&) noexcept = default;
 
   // TODO Is there a way to mitigate deadlock that occrs when a task is
   //      enqueued on current thread and get() on its handle is called?
@@ -305,19 +305,13 @@ public:
   { }
 
   task(const task&) = delete;
-  task(task&& other)
-  {
-    continuation_ = std::move(other.continuation_);
-    callable_ = std::move(other.callable_);
-    state_ = std::move(other.state_);
-    handle_acquired_.store(handle_acquired_.load(std::memory_order_relaxed), std::memory_order_relaxed); 
-  }
+  task(task&& other) = default;
 
   ~task()
   {
     if (state_)
     {
-      if (handle_acquired_.load(std::memory_order_relaxed) && !state_->is_ready())
+      if (handle_acquired_ && !state_->is_ready())
       {
         state_->set_exception(std::make_exception_ptr(
               task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
@@ -327,22 +321,16 @@ public:
   }
 
   task& operator=(const task&) = delete;
-  task& operator=(task&& other)
-  {
-    using std::swap;
-    task tmp = std::move(other);
-    swap(tmp, *this);
-    return *this;
-  }
+  task& operator=(task&& other) = default;
 
   task_handle<result_type> get_handle() const
   {
     if (!state_)
       THROW(task_error{} << task_error_info{task_error_code::no_state});
 
-    bool expected = false;
-    if (!handle_acquired_.compare_exchange_strong(expected, true))
+    if (handle_acquired_)
       THROW(task_error{} << task_error_info{task_error_code::handle_already_acquired});
+    handle_acquired_ = true;
 
     return task_handle<result_type>{state_};
   }
@@ -392,7 +380,7 @@ private:
   continuation continuation_;
   std::function<result_type()> callable_;
   std::shared_ptr<task_shared_state<result_type>> state_;
-  mutable std::atomic<bool> handle_acquired_{false};
+  mutable bool handle_acquired_{false};
 };
 
 template<>
@@ -416,19 +404,13 @@ public:
   { }
 
   task(const task&) = delete;
-  task(task&& other)
-  {
-    continuation_ = std::move(other.continuation_);
-    callable_ = std::move(other.callable_);
-    state_ = std::move(other.state_);
-    handle_acquired_.store(handle_acquired_.load(std::memory_order_relaxed), std::memory_order_relaxed); 
-  }
+  task(task&& other) = default;
 
   ~task()
   {
     if (state_)
     {
-      if (handle_acquired_.load(std::memory_order_relaxed) && !state_->is_ready())
+      if (handle_acquired_ && !state_->is_ready())
       {
         state_->set_exception(std::make_exception_ptr(
               task_error{} << task_error_info{task_error_code::not_run} << EXCEPTION_LOCATION));
@@ -445,10 +427,10 @@ public:
     if (!state_)
       THROW(task_error{} << task_error_info{task_error_code::no_state});
 
-    bool expected = false;
     // this could be memory_order_acq_rel operation, or maybe even relaxed?
-    if (!handle_acquired_.compare_exchange_strong(expected, true))
+    if (handle_acquired_)
       THROW(task_error{} << task_error_info{task_error_code::handle_already_acquired});
+    handle_acquired_ = true;
 
     return task_handle<result_type>{state_};
   }
