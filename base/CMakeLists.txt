@@ -9,6 +9,7 @@ set(HDRS
     message_loop.h
     thread.h
     task.h
+    waitable_event.h
    )
 
 set(SRCS
@@ -16,6 +17,7 @@ set(SRCS
     log.cc
     message_loop.cc
     thread.cc
+    waitable_event.cc
    )
 
 add_library(${TARGET_BASE} SHARED ${SRCS})

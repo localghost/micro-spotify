@@ -9,6 +9,7 @@ set(SRCS
     message_loop.cc
     thread.cc
     task.cc
+    waitable_event.cc
 )
 
 if (${CMAKE_HOST_APPLE})
