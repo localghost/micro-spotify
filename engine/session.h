@@ -80,6 +80,7 @@ private:
   frames_delivered_signal_type on_frames_delivered;
   search_completed_signal_type on_search_completed;
 
+  // TODO use scheduler instead of this, when implemented
   base::thread cb_thread;
 };
 }
