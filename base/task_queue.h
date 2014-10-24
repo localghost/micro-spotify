@@ -16,6 +16,8 @@ public:
 
   std::vector<timed_task> wait_and_pop();
 
+  void clear();
+
 private:
   std::vector<timed_task> queue_;
   std::mutex lock_;

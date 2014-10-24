@@ -39,4 +39,10 @@ std::vector<timed_task> task_queue::wait_and_pop()
   }
   return result;
 }
+
+void task_queue::clear()
+{
+  std::lock_guard<std::mutex> guard{lock_};
+  queue_.clear();
+}
 }

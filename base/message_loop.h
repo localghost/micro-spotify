@@ -1,15 +1,12 @@
 #ifndef BASE_MESSAGE_LOOP_H
 #define BASE_MESSAGE_LOOP_H
 
-#include <vector>
-#include <condition_variable>
-#include <mutex>
 #include <atomic>
-#include <utility>
 #include <base/timed_task.h>
 #include <base/chrono.h>
 #include <base/compatibility.h>
 #include <base/export.h>
+#include <base/task_queue.h>
 
 namespace base {
 // Tasks will be executed on the thread the start() method was invoked on.
@@ -33,12 +30,7 @@ private:
 
   std::atomic<bool> active_{false};
 
-  // TODO Rewrite to use lock-free priority queue
-  std::vector<timed_task> queue_;
-  std::mutex mutex_;
-  std::condition_variable waiter_;
-
-  high_steady_clock::time_point next_loop_time_;
+  task_queue queue_;
 };
 }
 
