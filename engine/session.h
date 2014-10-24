@@ -1,16 +1,10 @@
 #ifndef ENGINE_SESSION_H
 #define ENGINE_SESSION_H
 
-#include <cstdint>
-#include <map>
-#include <mutex>
-#include <memory>
-#include <unordered_set>
 #include <boost/signals2.hpp>
 #include <libspotify/api.h>
 #include <base/thread.h>
 #include <base/exception.h>
-#include <base/request_map.h>
 #include <base/export.h>
 #include <engine/configuration.h>
 #include <engine/search_request.h>

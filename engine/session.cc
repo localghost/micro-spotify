@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include <utility>
+#include <functional>
 
 #include <base/task.h>
 #include <base/log.h>
@@ -101,7 +102,7 @@ session::~session()
                                )).get();
 
   base::post_task_with_handle(spotify_thread(),
-                               base::make_task(&sp_session_release, session_)).get();
+                              base::make_task(&sp_session_release, session_)).get();
 
   // assuming that after sp_session_release() notify_main_thread callback will not be called
   // so it is safe to use the handle; posting cancellation to the spotify_thread for the same
@@ -119,17 +120,17 @@ session::~session()
 
 void session::log_in()
 {
-  spotify_thread().post_task(base::make_task(&sp_session_login,
-                                              session_,
-                                              username,
-                                              password,
-                                              false,
-                                              nullptr));
+  spotify_thread().post_task(std::bind(&sp_session_login,
+                                       session_,
+                                       username,
+                                       password,
+                                       false,
+                                       nullptr));
 }
 
 void session::log_out()
 {
-  spotify_thread().post_task(base::make_task(&sp_session_logout, session_));
+  spotify_thread().post_task(std::bind(&sp_session_logout, session_));
 }
 
 //playlist_container session::get_playlist_container()
@@ -221,14 +222,14 @@ void session::logged_in(sp_session* session_, sp_error error)
 {
   session* self = static_cast<session*>(sp_session_userdata(session_));
   BOOST_ASSERT(self);
-  self->cb_thread.post_task(base::make_task(std::ref(self->on_logged_in), error));
+  self->cb_thread.post_task(std::bind(std::ref(self->on_logged_in), error));
 }
 
 void session::logged_out(sp_session* session_)
 {
   session* self = static_cast<session*>(sp_session_userdata(session_));
   assert(self);
-  self->cb_thread.post_task(base::make_task(std::ref(self->on_logged_out)));
+  self->cb_thread.post_task(std::bind(std::ref(self->on_logged_out)));
 }
 
 void session::notify_main_thread(sp_session* session_)
