@@ -4,7 +4,7 @@
 #include <base/chrono.h>
 
 namespace base {
-void task_queue::push(queued_task t)
+void task_queue::push(timed_task t)
 {
   bool notify = false;
   {
@@ -17,9 +17,9 @@ void task_queue::push(queued_task t)
     cv_.notify_one();
 }
 
-std::vector<queued_task> task_queue::wait_and_pop()
+std::vector<timed_task> task_queue::wait_and_pop()
 {
-  std::vector<queued_task> result;
+  std::vector<timed_task> result;
   {
     std::unique_lock<std::mutex> guard{lock_};
     // FIXME Check if behaviour for wait_until() with time point in the past

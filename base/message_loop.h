@@ -6,7 +6,7 @@
 #include <mutex>
 #include <atomic>
 #include <utility>
-#include <base/queued_task.h>
+#include <base/timed_task.h>
 #include <base/chrono.h>
 #include <base/compatibility.h>
 #include <base/export.h>
@@ -29,12 +29,12 @@ public:
 private:
   void exec();
 
-  void post_queued_task(queued_task t);
+  void post_timed_task(timed_task t);
 
   std::atomic<bool> active_{false};
 
   // TODO Rewrite to use lock-free priority queue
-  std::vector<queued_task> queue_;
+  std::vector<timed_task> queue_;
   std::mutex mutex_;
   std::condition_variable waiter_;
 

@@ -37,19 +37,19 @@ void message_loop::stop()
 
 void message_loop::post_task(callable action)
 {
-  post_queued_task(queued_task{std::move(action)});
+  post_timed_task(timed_task{std::move(action)});
 }
 
 void message_loop::post_task(callable action, time_delay delay)
 {
-  post_queued_task(queued_task{std::move(action), high_steady_clock::now() + delay});
+  post_timed_task(timed_task{std::move(action), high_steady_clock::now() + delay});
 }
 
 // FIXME Consider running a task directly if it was added on the same thread
 //       on which message_loop is spinning and it has no delay; use case: 
 //       task is pushed on a loop and get() on its handle is called, in such
 //       case application blocks
-void message_loop::post_queued_task(queued_task t)
+void message_loop::post_timed_task(timed_task t)
 {
 //  if (!active_) return;
 //  LOG_DEBUG << "pushing a task on a thread: " << base::thread::current()->id();
@@ -79,7 +79,7 @@ void message_loop::exec()
 {
   while (active_)
   {
-    std::vector<queued_task> tasks;
+    std::vector<timed_task> tasks;
     {
       std::unique_lock<std::mutex> guard{mutex_};
 
@@ -100,7 +100,7 @@ void message_loop::exec()
 
       if (!queue_.empty()) next_loop_time_ = queue_.front().when;
     }    
-    for (queued_task& t : tasks)
+    for (auto& t : tasks)
       t.action();
   }
 }

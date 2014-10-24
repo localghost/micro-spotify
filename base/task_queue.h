@@ -4,7 +4,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <vector>
-#include <base/queued_task.h>
+#include <base/timed_task.h>
 #include <base/export.h>
 
 namespace base {
@@ -12,12 +12,12 @@ class EXPORT_API task_queue
 {
 public:
   // TODO utilise perfect fwd?
-  void push(queued_task t);
+  void push(timed_task t);
 
-  std::vector<queued_task> wait_and_pop();
+  std::vector<timed_task> wait_and_pop();
 
 private:
-  std::vector<queued_task> queue_;
+  std::vector<timed_task> queue_;
   std::mutex lock_;
   std::condition_variable cv_;
 };
