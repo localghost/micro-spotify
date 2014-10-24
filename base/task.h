@@ -100,7 +100,7 @@ public:
 
   // This looks like a premature optimization, is it? Isn't std::bind() optimized already for callables
   // that don't take any arguments?
-  template<typename F, typename std::enable_if<!std::is_same<task, F>::value>::type* = nullptr>
+  template<typename F, typename std::enable_if<!std::is_same<task, typename std::decay<F>::type>::value>::type* = nullptr>
   explicit task(F&& callable)
     : callable_(std::forward<F>(callable)),
       state_(new detail::task_shared_state<result_type>)
@@ -199,7 +199,7 @@ public:
 
   task() = default;
 
-  template<typename F, typename std::enable_if<!std::is_same<task, F>::value>::type* = nullptr>
+  template<typename F, typename std::enable_if<!std::is_same<task, typename std::decay<F>::type>::value>::type* = nullptr>
   explicit task(F&& callable)
     : callable_(std::forward<F>(callable)),
       state_(new detail::task_shared_state<result_type>)

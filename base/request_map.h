@@ -2,6 +2,7 @@
 #define BASE_REQUEST_MAP_H
 
 #include <map>
+#include <type_traits>
 
 namespace base {
 template<typename T>
@@ -14,7 +15,8 @@ public:
   template<typename U>
   id_type insert(U&& request)
   {
-    static_assert(std::is_same<request_type, U>::value, "Class's and method's template arguments differ");
+    static_assert(std::is_same<request_type, typename std::decay<U>::type>::value,
+                  "Class's and method's template arguments differ");
 
     id_type id = next_id++;
     // FIXME detect collisions and re-use free ids

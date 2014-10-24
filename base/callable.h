@@ -19,7 +19,8 @@ private:
   class model : public model_base
   {
   public:
-    template<typename U, typename std::enable_if<!std::is_same<model, U>::value>::type* = nullptr>
+    template<typename U,
+             typename std::enable_if<!std::is_same<model, typename std::decay<U>::type>::value>::type* = nullptr>
     explicit model(U&& action) : action{std::forward<U>(action)} {}
 
     void call()
@@ -32,7 +33,8 @@ private:
   };
 
 public:
-  template<typename T, typename std::enable_if<!std::is_same<callable, T>::value>::type* = nullptr>
+  template<typename T,
+           typename std::enable_if<!std::is_same<callable, typename std::decay<T>::type>::value>::type* = nullptr>
   callable(T&& t) : action{new model<typename std::decay<T>::type>{std::forward<T>(t)}} {}
 
   callable(const callable&) noexcept = default;
