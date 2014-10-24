@@ -33,7 +33,7 @@ private:
 
 public:
   template<typename T, typename std::enable_if<!std::is_same<callable, T>::value>::type* = nullptr>
-  callable(T&& t) : action{new model<T>{std::forward<T>(t)}} {}
+  callable(T&& t) : action{new model<typename std::decay<T>::type>{std::forward<T>(t)}} {}
 
   callable(const callable&) noexcept = default;
   callable(callable&&) noexcept = default;
