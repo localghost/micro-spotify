@@ -12,6 +12,7 @@ set(SRCS
     waitable_event.cc
     task_queue.cc
     callable.cc
+    scoped_thread.cc
 )
 
 if (${CMAKE_HOST_APPLE})
