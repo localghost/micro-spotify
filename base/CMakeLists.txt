@@ -10,6 +10,9 @@ set(HDRS
     thread.h
     task.h
     waitable_event.h
+  chrono.h
+  threadpool.h
+  scoped_thread.h
    )
 
 set(SRCS
@@ -19,7 +22,8 @@ set(SRCS
     thread.cc
     waitable_event.cc
     task_queue.cc
+  scoped_thread.cc
    )
 
-add_library(${TARGET_BASE} SHARED ${SRCS})
+add_library(${TARGET_BASE} SHARED ${SRCS} ${HDRS})
 set_target_properties(${TARGET_BASE} PROPERTIES COMPILE_FLAGS "-fPIC")
