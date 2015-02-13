@@ -7,9 +7,12 @@
 #include <base/export.h>
 
 namespace base {
+// The class wraps up object representing a running thread or starts a new one
+// and joins with it in the destructor.
 class EXPORT_API scoped_thread FINAL
 {
 public:
+	// precondition: t.joinable() == true
   explicit scoped_thread(std::thread t);
 
   template<typename F, typename ...Args>
