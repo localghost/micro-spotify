@@ -1,8 +1,11 @@
 #include "scoped_thread.h"
 
+#include "assert.h""
+
 namespace base {
-scoped_thread::scoped_thread(std::thread thr) : thread_(std::move(thr))
+scoped_thread::scoped_thread(std::thread t) : thread_(std::move(t))
 {
+	PRECONDITION(t.joinable())
 }
 
 scoped_thread::~scoped_thread()
